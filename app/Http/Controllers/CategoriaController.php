@@ -146,8 +146,10 @@ class CategoriaController extends Controller
         $categoria->activo = 1;
         $categoria->save();
 
-        return redirect()->route('categorias.index')
+        return redirect()
+            ->route('categorias.index')
             ->with('categoria_habilitada', $categoria->nombre);
+
     }
 
 

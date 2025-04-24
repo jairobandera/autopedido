@@ -38,12 +38,12 @@
                         <td>
                             <a href="{{ route('categorias.edit', $categoria->id) }}" class="btn btn-sm btn-warning">Editar</a>
                             <form id="form-eliminar-{{ $categoria->id }}"
-                                  action="{{ route('categorias.destroy', $categoria->id) }}"
-                                  method="POST" style="display:inline;">
+                                action="{{ route('categorias.destroy', $categoria->id) }}" method="POST"
+                                style="display:inline;">
                                 @csrf
                                 @method('DELETE')
                                 <button type="button" class="btn btn-sm btn-danger"
-                                        onclick="confirmarEliminacion({{ $categoria->id }}, '{{ $categoria->nombre }}')">
+                                    onclick="confirmarEliminacion({{ $categoria->id }}, '{{ $categoria->nombre }}')">
                                     Deshabilitar
                                 </button>
                             </form>
@@ -104,6 +104,20 @@
             });
         </script>
     @endif
+
+    @if(session('categoria_habilitada'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Categoría habilitada!',
+                    text: 'La categoría "{{ session('categoria_habilitada') }}" fue habilitada correctamente.',
+                    confirmButtonColor: '#198754',
+                });
+            });
+        </script>
+    @endif
+
 
     <script>
         function confirmarEliminacion(id, nombre) {

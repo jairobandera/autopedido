@@ -5,17 +5,15 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\PedidoController;
 
-Route::resource('productos', ProductoController::class);
-Route::resource('categorias', CategoriaController::class);
-Route::resource('pedidos', PedidoController::class);
 
+// 🔹 Primero las rutas personalizadas
+Route::get('/categorias/deshabilitadas', [CategoriaController::class, 'deshabilitadas'])->name('categorias.deshabilitadas');
+Route::put('/categorias/{id}/habilitar', [CategoriaController::class, 'habilitar'])->name('categorias.habilitar');
+
+// 🔹 Después el resource de CATEGORÍAS (solo una vez)
+Route::resource('categorias', CategoriaController::class);
 
 Route::get('/', function () {
     return view('welcome');
 });
-
-Route::resource('productos', ProductoController::class);
-Route::get('/categorias/deshabilitadas', [CategoriaController::class, 'deshabilitadas'])->name('categorias.deshabilitadas');
-Route::put('/categorias/{id}/habilitar', [CategoriaController::class, 'habilitar'])->name('categorias.habilitar');
-Route::resource('categorias', CategoriaController::class);
 
