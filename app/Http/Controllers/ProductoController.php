@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Producto;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -12,7 +13,9 @@ class ProductoController extends Controller
      */
     public function index()
     {
-        //
+        return response()->json(
+            Producto::with(['categorias', 'ingredientes', 'promociones'])->get()
+        );
     }
 
     /**
@@ -36,7 +39,8 @@ class ProductoController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $producto = Producto::with(['categorias', 'ingredientes', 'promociones'])->findOrFail($id);
+        return response()->json($producto);
     }
 
     /**
@@ -60,6 +64,14 @@ class ProductoController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $producto = Producto::find($id);
+
+        if (!$producto) {
+            return response()->json(['error' => 'Producto no encontrado'], 404);
+        }
+
+        $producto->delete();
+
+        return response()->json(['mensaje' => 'Producto eliminado correctamente']);
     }
 }

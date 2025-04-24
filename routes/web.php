@@ -13,3 +13,9 @@ Route::resource('pedidos', PedidoController::class);
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::resource('productos', ProductoController::class);
+Route::get('/categorias/deshabilitadas', [CategoriaController::class, 'deshabilitadas'])->name('categorias.deshabilitadas');
+Route::put('/categorias/{id}/habilitar', [CategoriaController::class, 'habilitar'])->name('categorias.habilitar');
+Route::resource('categorias', CategoriaController::class);
+
