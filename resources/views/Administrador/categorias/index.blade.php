@@ -62,6 +62,9 @@
                 @endforelse
             </tbody>
         </table>
+        <div class="d-flex justify-content-center mt-3">
+            {{ $categorias->appends(['buscar' => request('buscar')])->links() }}
+        </div>
     </div>
 @endsection
 

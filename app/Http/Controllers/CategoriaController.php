@@ -17,7 +17,7 @@ class CategoriaController extends Controller
             $query->whereRaw('LOWER(nombre) LIKE ?', ['%' . $busqueda . '%']);
         }
 
-        $categorias = $query->get();
+        $categorias = $query->paginate(10);
 
         return view('Administrador.categorias.index', compact('categorias'));
     }
