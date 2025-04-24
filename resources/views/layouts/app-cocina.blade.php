@@ -16,7 +16,7 @@
     {{-- NAVBAR --}}
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Eatsy Admin</a>
+            <a class="navbar-brand" href="#">Eatsy Cocina</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -27,11 +27,6 @@
                         <a class="nav-link active" href="/">Inicio</a>
                     </li>
                 </ul>
-                <form class="d-flex" role="search" method="GET" action="{{ route('categorias.index') }}">
-                    <input class="form-control me-2" type="search" name="buscar" placeholder="Buscar categoría"
-                        aria-label="Buscar">
-                    <button class="btn btn-outline-light" type="submit">Buscar</button>
-                </form>
                 <ul class="navbar-nav ms-3">
                     <li class="nav-item">
                         <form action="{{ route('logout') }}" method="POST">
