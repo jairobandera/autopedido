@@ -27,17 +27,17 @@
     {{-- NAVBAR --}}
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container">
-            <a class="navbar-brand" href="#">Eatsy Admin</a>
+            <a class="navbar-brand" href="#">Eatsy | Admin</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <ul class="navbar-nav">
-                    <li class="nav-item"><a href="/admin/dashboard" class="nav-link">Inicio</a></li>
+                    <li class="nav-item"><a href="/administrador/dashboard" class="nav-link">Inicio</a></li>
                     <li class="nav-item"><a href="{{ route('categorias.index') }}" class="nav-link">Categorías</a></li>
                     <li class="nav-item"><a href="#" class="nav-link">Productos</a></li>
-                    <li class="nav-item"><a href="#" class="nav-link">Usuarios</a></li>
+                    <li class="nav-item"><a href="{{ route(name:'usuarios.index' ) }}" class="nav-link">Usuarios</a></li>
                     <li class="nav-item"><a href="#" class="nav-link">Gráficas</a></li>
                     <ul class="navbar-nav ms-3">
                         <li class="nav-item">
