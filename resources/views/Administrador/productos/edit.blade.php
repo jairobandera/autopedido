@@ -44,7 +44,7 @@
                 <div class="mb-3">
                     <label for="imagen" class="form-label">Imagen (URL o nombre)</label>
                     <input type="text" name="imagen" id="imagen" class="form-control"
-                           value="{{ old('imagen', $producto->imagen) }}" required>
+                           value="{{ old('imagen', $producto->imagen) }}">
                 </div>
 
                 <div class="mb-3">

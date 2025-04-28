@@ -29,7 +29,7 @@ class ProductoController extends Controller
             'nombre' => 'required|string|max:255',
             'descripcion' => 'required|string',
             'precio' => 'required|numeric|min:0',
-            'imagen' => 'required|string|max:255',
+            'imagen' => 'nullable|string|max:255',
             'categoria_ids' => 'required|array',
             'categoria_ids.*' => 'exists:categorias,id',
             'ingrediente_ids' => 'nullable|array',
@@ -45,8 +45,12 @@ class ProductoController extends Controller
                 ->with('producto_duplicado', $request->nombre);
         }
 
+        //asignamos placeholder si imagen está vacía
+        $data = $request->only(['nombre', 'descripcion', 'precio', 'imagen']);
+        $data['imagen'] = $request->imagen ?: 'https://via.placeholder.com/150';
+
         //creamos un nuevo producto
-        $producto = Producto::create($request->only(['nombre', 'descripcion', 'precio', 'imagen']));
+        $producto = Producto::create($data);
         $producto->categorias()->sync($request->categoria_ids);
         if ($request->ingrediente_ids) {
             $producto->ingredientes()->sync($request->ingrediente_ids);
@@ -63,7 +67,7 @@ class ProductoController extends Controller
             'nombre' => 'required|string|max:255',
             'descripcion' => 'required|string',
             'precio' => 'required|numeric|min:0',
-            'imagen' => 'required|string|max:255',
+            'imagen' => 'nullable|string|max:255',
             'categoria_ids' => 'required|array',
             'categoria_ids.*' => 'exists:categorias,id',
             'ingrediente_ids' => 'nullable|array',
@@ -84,8 +88,12 @@ class ProductoController extends Controller
                 ->with('producto_duplicado', $request->nombre);
         }
 
+        //asignamos placeholder si imagen está vacía
+        $data = $request->only(['nombre', 'descripcion', 'precio', 'imagen']);
+        $data['imagen'] = $request->imagen ?: 'https://via.placeholder.com/150';
+
         //actualizamos datos
-        $producto->update($request->only(['nombre', 'descripcion', 'precio', 'imagen']));
+        $producto->update($data);
         $producto->categorias()->sync($request->categoria_ids);
         $producto->ingredientes()->sync($request->ingrediente_ids ?? []);
 

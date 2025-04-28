@@ -42,7 +42,7 @@
                 <div class="mb-3">
                     <label for="imagen" class="form-label">Imagen (URL o nombre)</label>
                     <input type="text" name="imagen" id="imagen" class="form-control"
-                           placeholder="Ej: hamburguesa.jpg" value="{{ old('imagen') }}" required>
+                           placeholder="Ej: hamburguesa.jpg" value="{{ old('imagen') }}">
                 </div>
 
                 <div class="mb-3">
