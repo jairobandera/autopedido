@@ -1,23 +1,23 @@
 @extends('layouts.app-administrador')
 
-@section('title', 'Gestión de Usuarios')
+@section('title', 'Gestión de Ingredientes')
 
 @section('content')
     <div class="text-center mb-4">
-        <h2>Gestión de Usuarios</h2>
+        <h2>Gestión de Ingredientes</h2>
     </div>
 
     <div class="d-flex justify-content-between mb-3">
         <div class="input-group w-50">
-            <form action="{{ route('usuarios.index') }}" method="GET" class="d-flex w-100">
-                <input type="text" name="buscar" class="form-control" placeholder="Buscar usuario..."
+            <form action="{{ route('ingredientes.index') }}" method="GET" class="d-flex w-100">
+                <input type="text" name="buscar" class="form-control" placeholder="Buscar ingrediente..."
                        value="{{ request('buscar') }}">
                 <button type="submit" class="btn btn-outline-primary ms-2">Buscar</button>
             </form>
         </div>
         <div>
-            <a href="{{ route('usuarios.create') }}" class="btn btn-success">+ Nuevo Usuario</a>
-            <a href="{{ route('usuarios.deshabilitadas') }}" class="btn btn-outline-secondary ms-2">Ver deshabilitados</a>
+            <a href="{{ route('ingredientes.create') }}" class="btn btn-success">+ Nuevo Ingrediente</a>
+            <a href="{{ route('ingredientes.deshabilitadas') }}" class="btn btn-outline-secondary ms-2">Ver deshabilitados</a>
         </div>
     </div>
 
@@ -27,25 +27,25 @@
                 <tr>
                     <th>ID</th>
                     <th>Nombre</th>
-                    <th>Rol</th>
+                    <th>Descripción</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($usuarios as $usuario)
+                @forelse($ingredientes as $ingrediente)
                     <tr>
-                        <td>{{ $usuario->id }}</td>
-                        <td>{{ $usuario->nombre }}</td>
-                        <td>{{ $usuario->rol }}</td>
+                        <td>{{ $ingrediente->id }}</td>
+                        <td>{{ $ingrediente->nombre }}</td>
+                        <td>{{ $ingrediente->descripcion }}</td>
                         <td>
-                            <a href="{{ route('usuarios.edit', $usuario->id) }}" class="btn btn-sm btn-warning">Editar</a>
-                            <form id="form-deshabilitar-{{ $usuario->id }}"
-                                  action="{{ route('usuarios.deshabilitar', $usuario->id) }}" method="POST"
+                            <a href="{{ route('ingredientes.edit', $ingrediente->id) }}" class="btn btn-sm btn-warning">Editar</a>
+                            <form id="form-deshabilitar-{{ $ingrediente->id }}"
+                                  action="{{ route('ingredientes.deshabilitar', $ingrediente->id) }}" method="POST"
                                   style="display:inline;">
                                 @csrf
                                 @method('PATCH')
                                 <button type="button" class="btn btn-sm btn-danger"
-                                        onclick="confirmarDeshabilitar({{ $usuario->id }}, '{{ $usuario->nombre }}')">
+                                        onclick="confirmarDeshabilitar({{ $ingrediente->id }}, '{{ $ingrediente->nombre }}')">
                                     Deshabilitar
                                 </button>
                             </form>
@@ -53,64 +53,64 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4">No hay usuarios registrados.</td>
+                        <td colspan="4">No hay ingredientes registrados.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
         <div class="d-flex justify-content-center mt-3">
-            {{ $usuarios->links() }}
+            {{ $ingredientes->links() }}
         </div>
     </div>
 @endsection
 
 @section('scripts')
-    @if(session('usuario_creado'))
+    @if(session('ingrediente_creado'))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'success',
-                    title: '¡Usuario creado!',
-                    text: "El usuario '{{ session('usuario_creado') }}' se ha creado exitosamente.",
+                    title: '¡Ingrediente creado!',
+                    text: 'El ingrediente "{{ session('ingrediente_creado') }}" se ha creado exitosamente.',
                     confirmButtonColor: '#198754',
                 });
             });
         </script>
     @endif
 
-    @if(session('usuario_editado'))
+    @if(session('ingrediente_editado'))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'success',
-                    title: '¡Usuario actualizado!',
-                    text: "El usuario '{{ session('usuario_editado') }}' fue editado correctamente.",
+                    title: '¡Ingrediente actualizado!',
+                    text: 'El ingrediente "{{ session('ingrediente_editado') }}" fue editado correctamente.',
                     confirmButtonColor: '#0d6efd',
                 });
             });
         </script>
     @endif
 
-    @if(session('usuario_deshabilitado'))
+    @if(session('ingrediente_deshabilitado'))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'success',
-                    title: 'Usuario deshabilitado',
-                    text: "El usuario '{{ session('usuario_deshabilitado') }}' fue deshabilitado correctamente.",
+                    title: 'Ingrediente deshabilitado',
+                    text: 'El ingrediente "{{ session('ingrediente_deshabilitado') }}" fue deshabilitado correctamente.',
                     confirmButtonColor: '#198754',
                 });
             });
         </script>
     @endif
 
-    @if(session('usuario_habilitado'))
+    @if(session('ingrediente_habilitado'))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'success',
-                    title: '¡Usuario habilitado!',
-                    text: "El usuario '{{ session('usuario_habilitado') }}' fue habilitado correctamente.",
+                    title: '¡Ingrediente habilitado!',
+                    text: 'El ingrediente "{{ session('ingrediente_habilitado') }}" fue habilitado correctamente.',
                     confirmButtonColor: '#198754',
                 });
             });
@@ -121,7 +121,7 @@
         function confirmarDeshabilitar(id, nombre) {
             Swal.fire({
                 title: '¿Estás seguro?',
-                text: `El usuario "${nombre}" será deshabilitado.`,
+                text: `El ingrediente "${nombre}" será deshabilitado.`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',

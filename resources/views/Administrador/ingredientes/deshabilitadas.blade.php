@@ -1,13 +1,13 @@
 @extends('layouts.app-administrador')
 
-@section('title', 'Usuarios Deshabilitados')
+@section('title', 'Ingredientes Deshabilitados')
 
 @section('content')
     <div class="text-center mb-4">
-        <h2>Usuarios Deshabilitados</h2>
+        <h2>Ingredientes Deshabilitados</h2>
     </div>
 
-    <a href="{{ route('usuarios.index') }}" class="btn btn-primary mb-3">← Volver al listado</a>
+    <a href="{{ route('ingredientes.index') }}" class="btn btn-primary mb-3">← Volver al listado</a>
 
     <div class="table-responsive">
         <table class="table table-hover text-center align-middle">
@@ -15,23 +15,23 @@
                 <tr>
                     <th>ID</th>
                     <th>Nombre</th>
-                    <th>Rol</th>
+                    <th>Descripción</th>
                     <th>Acción</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($usuarios as $usuario)
+                @forelse($ingredientes as $ingrediente)
                     <tr>
-                        <td>{{ $usuario->id }}</td>
-                        <td>{{ $usuario->nombre }}</td>
-                        <td>{{ $usuario->rol }}</td>
+                        <td>{{ $ingrediente->id }}</td>
+                        <td>{{ $ingrediente->nombre }}</td>
+                        <td>{{ $ingrediente->descripcion }}</td>
                         <td>
-                            <form id="form-habilitar-{{ $usuario->id }}"
-                                  action="{{ route('usuarios.habilitar', $usuario->id) }}" method="POST">
+                            <form id="form-habilitar-{{ $ingrediente->id }}"
+                                  action="{{ route('ingredientes.habilitar', $ingrediente->id) }}" method="POST">
                                 @csrf
                                 @method('PATCH')
                                 <button type="button" class="btn btn-success btn-sm"
-                                        onclick="confirmarHabilitar({{ $usuario->id }}, '{{ $usuario->nombre }}')">
+                                        onclick="confirmarHabilitar({{ $ingrediente->id }}, '{{ $ingrediente->nombre }}')">
                                     Habilitar
                                 </button>
                             </form>
@@ -39,25 +39,25 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4">No hay usuarios deshabilitados.</td>
+                        <td colspan="4">No hay ingredientes deshabilitados.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
         <div class="d-flex justify-content-center mt-3">
-            {{ $usuarios->links() }}
+            {{ $ingredientes->links() }}
         </div>
     </div>
 @endsection
 
 @section('scripts')
-    @if(session('usuario_habilitado'))
+    @if(session('ingrediente_habilitado'))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'success',
-                    title: '¡Usuario habilitado!',
-                    text: "El usuario '{{ session('usuario_habilitado') }}' fue habilitado correctamente.",
+                    title: '¡Ingrediente habilitado!',
+                    text: 'El ingrediente "{{ session('ingrediente_habilitado') }}" fue habilitado correctamente.',
                     confirmButtonColor: '#198754',
                 });
             });
@@ -69,8 +69,8 @@
             document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Ya existe un usuario activo',
-                    text: "No se puede habilitar '{{ session('error_habilitar') }}' porque ya existe activo.",
+                    title: 'Ya existe un ingrediente activo',
+                    text: 'No se puede habilitar "{{ session('error_habilitar') }}" porque ya existe activo.',
                     confirmButtonColor: '#dc3545',
                 });
             });
@@ -81,7 +81,7 @@
         function confirmarHabilitar(id, nombre) {
             Swal.fire({
                 title: '¿Estás seguro?',
-                text: `El usuario "${nombre}" será habilitado.`,
+                text: `El ingrediente "${nombre}" será habilitado.`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#198754',

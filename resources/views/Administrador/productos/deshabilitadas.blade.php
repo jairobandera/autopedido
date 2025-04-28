@@ -1,13 +1,13 @@
 @extends('layouts.app-administrador')
 
-@section('title', 'Usuarios Deshabilitados')
+@section('title', 'Productos Deshabilitados')
 
 @section('content')
     <div class="text-center mb-4">
-        <h2>Usuarios Deshabilitados</h2>
+        <h2>Productos Deshabilitados</h2>
     </div>
 
-    <a href="{{ route('usuarios.index') }}" class="btn btn-primary mb-3">← Volver al listado</a>
+    <a href="{{ route('productos.index') }}" class="btn btn-primary mb-3">← Volver al listado</a>
 
     <div class="table-responsive">
         <table class="table table-hover text-center align-middle">
@@ -15,23 +15,36 @@
                 <tr>
                     <th>ID</th>
                     <th>Nombre</th>
-                    <th>Rol</th>
+                    <th>Precio</th>
+                    <th>Imagen</th>
+                    <th>Categorías</th>
+                    <th>Ingredientes</th>
                     <th>Acción</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($usuarios as $usuario)
+                @forelse($productos as $producto)
                     <tr>
-                        <td>{{ $usuario->id }}</td>
-                        <td>{{ $usuario->nombre }}</td>
-                        <td>{{ $usuario->rol }}</td>
+                        <td>{{ $producto->id }}</td>
+                        <td>{{ $producto->nombre }}</td>
+                        <td>${{ number_format($producto->precio, 2) }}</td>
                         <td>
-                            <form id="form-habilitar-{{ $usuario->id }}"
-                                  action="{{ route('usuarios.habilitar', $usuario->id) }}" method="POST">
+                            @if($producto->imagen)
+                                <img src="{{ $producto->imagen }}" alt="{{ $producto->nombre }}"
+                                     class="img-thumbnail" style="max-width: 100px; max-height: 100px;">
+                            @else
+                                Sin imagen
+                            @endif
+                        </td>
+                        <td>{{ $producto->categorias->pluck('nombre')->join(', ') ?: 'Sin categorías' }}</td>
+                        <td>{{ $producto->ingredientes->pluck('nombre')->join(', ') ?: 'Sin ingredientes' }}</td>
+                        <td>
+                            <form id="form-habilitar-{{ $producto->id }}"
+                                  action="{{ route('productos.habilitar', $producto->id) }}" method="POST">
                                 @csrf
                                 @method('PATCH')
                                 <button type="button" class="btn btn-success btn-sm"
-                                        onclick="confirmarHabilitar({{ $usuario->id }}, '{{ $usuario->nombre }}')">
+                                        onclick="confirmarHabilitar({{ $producto->id }}, '{{ $producto->nombre }}')">
                                     Habilitar
                                 </button>
                             </form>
@@ -39,25 +52,25 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4">No hay usuarios deshabilitados.</td>
+                        <td colspan="7">No hay productos deshabilitados.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
         <div class="d-flex justify-content-center mt-3">
-            {{ $usuarios->links() }}
+            {{ $productos->links() }}
         </div>
     </div>
 @endsection
 
 @section('scripts')
-    @if(session('usuario_habilitado'))
+    @if(session('producto_habilitado'))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'success',
-                    title: '¡Usuario habilitado!',
-                    text: "El usuario '{{ session('usuario_habilitado') }}' fue habilitado correctamente.",
+                    title: '¡Producto habilitado!',
+                    text: 'El producto "{{ session('producto_habilitado') }}" fue habilitado correctamente.',
                     confirmButtonColor: '#198754',
                 });
             });
@@ -69,8 +82,8 @@
             document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Ya existe un usuario activo',
-                    text: "No se puede habilitar '{{ session('error_habilitar') }}' porque ya existe activo.",
+                    title: 'Ya existe un producto activo',
+                    text: 'No se puede habilitar "{{ session('error_habilitar') }}" porque ya existe activo.',
                     confirmButtonColor: '#dc3545',
                 });
             });
@@ -81,7 +94,7 @@
         function confirmarHabilitar(id, nombre) {
             Swal.fire({
                 title: '¿Estás seguro?',
-                text: `El usuario "${nombre}" será habilitado.`,
+                text: `El producto "${nombre}" será habilitado.`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#198754',

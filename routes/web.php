@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\IngredienteController;
 use App\Http\Controllers\AuthController;
 
 // 🔹 Rutas personalizadas de CATEGORÍAS
@@ -19,6 +21,22 @@ Route::patch('/usuarios/{id}/habilitar', [UsuarioController::class, 'habilitar']
 
 // 🔹 Resource de USUARIOS
 Route::resource('usuarios', UsuarioController::class);
+
+// 🔹 Rutas personalizadas de PRODUCTOS
+Route::get('/productos/deshabilitadas', [ProductoController::class, 'deshabilitadas'])->name('productos.deshabilitadas');
+Route::patch('/productos/{id}/deshabilitar', [ProductoController::class, 'destroy'])->name('productos.deshabilitar');
+Route::patch('/productos/{id}/habilitar', [ProductoController::class, 'habilitar'])->name('productos.habilitar');
+
+// 🔹 Resource de PRODUCTOS
+Route::resource('productos', ProductoController::class)->except(['destroy']);
+
+// 🔹 Rutas personalizadas de INGREDIENTES
+Route::get('/ingredientes/deshabilitadas', [IngredienteController::class, 'deshabilitadas'])->name('ingredientes.deshabilitadas');
+Route::patch('/ingredientes/{id}/deshabilitar', [IngredienteController::class, 'destroy'])->name('ingredientes.deshabilitar');
+Route::patch('/ingredientes/{id}/habilitar', [IngredienteController::class, 'habilitar'])->name('ingredientes.habilitar');
+
+// 🔹 Resource de INGREDIENTES
+Route::resource('ingredientes', IngredienteController::class)->except(['destroy']);
 
 // 🔹 Rutas de autenticación
 Route::get('/login', [AuthController::class, 'mostrarFormulario'])->name('login');

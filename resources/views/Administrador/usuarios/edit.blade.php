@@ -62,7 +62,7 @@
                 Swal.fire({
                     icon: 'warning',
                     title: 'Nombre duplicado',
-                    text: 'Ya existe un usuario con el nombre "{{ session('usuario_duplicado') }}".',
+                    text: "Ya existe un usuario con el nombre '{{ session('usuario_duplicado') }}'.",
                     confirmButtonColor: '#dc3545',
                 });
             });

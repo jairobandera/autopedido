@@ -20,6 +20,7 @@
                 </div>
             </div>
         </div>
+        
         {{-- Productos --}}
         <div class="col-md-3 mb-4">
             <div class="card h-100 shadow-sm">
@@ -27,7 +28,19 @@
                     alt="Productos">
                 <div class="card-body text-center">
                     <h5 class="card-title">Productos</h5>
-                    <button class="btn btn-primary" disabled>Gestionar</button>
+                    <a href="{{ route('productos.index') }}" class="btn btn-primary">Gestionar</a>
+                </div>
+            </div>
+        </div>
+
+        {{-- Ingredientes --}}
+        <div class="col-md-3 mb-4">
+            <div class="card h-100 shadow-sm">
+                <img src="https://cdn-icons-png.flaticon.com/512/9862/9862064.png" class="card-img-top p-4"
+                    alt="Ingredientes">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Ingredientes</h5>
+                    <a href="{{ route('ingredientes.index') }}" class="btn btn-primary">Gestionar</a>
                 </div>
             </div>
         </div>
