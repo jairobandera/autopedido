@@ -48,7 +48,7 @@
                 <div class="mb-3">
                     <label class="form-label">Previsualización de la Imagen</label>
                     <div>
-                        <img id="imagen-preview" src="{{ old('imagen') ?: 'https://via.placeholder.com/150' }}"
+                        <img id="imagen-preview" src="{{ old('imagen') ?: 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png' }}"
                              alt="Previsualización" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
                     </div>
                 </div>
@@ -75,6 +75,20 @@
                     </select>
                 </div>
 
+                <div class="mb-3">
+                    <label class="form-label">Configuración de Ingredientes</label>
+                    <table class="table table-bordered" id="ingredientes-table">
+                        <thead>
+                            <tr>
+                                <th>Ingrediente</th>
+                                <th>Obligatorio</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
                 <div class="d-flex justify-content-between">
                     <a href="{{ route('productos.index') }}" class="btn btn-secondary">Volver</a>
                     <button type="submit" class="btn btn-success">Guardar Producto</button>
@@ -82,81 +96,25 @@
             </form>
         </div>
     </div>
-@endsection
 
-@section('styles')
+    <!-- Cargar CSS y JS externos -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <style>
-        .select2-container--default .select2-selection--multiple {
-            border: 1px solid #ced4da;
-            border-radius: 0.25rem;
-            padding: 0.375rem 0.75rem;
-        }
-        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
-            padding: 0;
-        }
-        .select2-container--default .select2-selection--multiple .select2-selection__choice {
-            background-color: #198754;
-            color: white;
-            border: none;
-            padding: 2px 5px;
-            margin: 2px;
-        }
-        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-            color: white;
-            margin-right: 5px;
-        }
-    </style>
-@endsection
+    @vite(['resources/css/Administrador/productos/crear-producto.css'])
 
-@section('scripts')
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @vite(['resources/js/Administrador/productos/crear-producto.js'])
+
+    <!-- Pasar datos de sesión al JavaScript -->
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            $('#categoria_ids').select2({
-                placeholder: 'Seleccione una o más categorías',
-                allowClear: true,
-                width: '100%'
-            });
-            $('#ingrediente_ids').select2({
-                placeholder: 'Seleccione uno o más ingredientes',
-                allowClear: true,
-                width: '100%'
-            });
-
-            const imagenInput = document.getElementById('imagen');
-            const imagenPreview = document.getElementById('imagen-preview');
-            imagenInput.addEventListener('input', function () {
-                const url = imagenInput.value.trim();
-                imagenPreview.src = url || 'https://via.placeholder.com/150';
-            });
-        });
+        // Convertir old('ingrediente_obligatorio') en una lista de IDs marcados como obligatorios
+        window.oldIngredientesObligatorios = @json(collect(old('ingrediente_obligatorio', []))->keys()->toArray());
+        @if(session('producto_duplicado'))
+            window.productoDuplicado = {{ json_encode(session('producto_duplicado')) }};
+        @endif
+        @if(session('productocreado'))
+            window.productoCreado = {{ json_encode(session('productocreado')) }};
+        @endif
     </script>
-
-    @if(session('producto_duplicado'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Nombre duplicado',
-                    text: 'Ya existe un producto con el nombre "{{ session('producto_duplicado') }}".',
-                    confirmButtonColor: '#dc3545',
-                });
-            });
-        </script>
-    @endif
-
-    @if(session('producto_creado'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Producto creado!',
-                    text: 'El producto "{{ session('producto_creado') }}" se ha creado exitosamente.',
-                    confirmButtonColor: '#198754',
-                });
-            });
-        </script>
-    @endif
 @endsection

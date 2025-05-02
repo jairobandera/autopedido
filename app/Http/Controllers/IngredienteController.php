@@ -41,7 +41,7 @@ class IngredienteController extends Controller
         Ingrediente::create($request->only(['nombre', 'descripcion']));
 
         return redirect()
-            ->route('ingredientes.create')
+            ->route('ingredientes.index')
             ->with('ingrediente_creado', $request->nombre);
     }
 

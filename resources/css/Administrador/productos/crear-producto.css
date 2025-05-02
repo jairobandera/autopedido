@@ -1,0 +1,4 @@
+/* estilos para la tabla de ingredientes */
+#ingredientes-table tbody tr td {
+    vertical-align: middle;
+}

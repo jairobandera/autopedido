@@ -3,6 +3,11 @@
 @section('title', 'Crear Ingrediente')
 
 @section('content')
+    <script>
+        window.ingredienteDuplicado = @json(session('ingrediente_duplicado'));
+        window.ingredienteCreado = @json(session('ingrediente_creado'));
+    </script>
+
     <div class="text-center mb-4">
         <h2>Crear Nuevo Ingrediente</h2>
     </div>
@@ -42,30 +47,7 @@
     </div>
 @endsection
 
-@section('scripts')
-    @if(session('ingrediente_duplicado'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Nombre duplicado',
-                    text: 'Ya existe un ingrediente con el nombre "{{ session('ingrediente_duplicado') }}".',
-                    confirmButtonColor: '#dc3545',
-                });
-            });
-        </script>
-    @endif
-
-    @if(session('ingrediente_creado'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Ingrediente creado!',
-                    text: 'El ingrediente "{{ session('ingrediente_creado') }}" se ha creado exitosamente.',
-                    confirmButtonColor: '#198754',
-                });
-            });
-        </script>
-    @endif
-@endsection
+@vite([
+    'resources/css/Administrador/ingredientes/crear-ingrediente.css',
+    'resources/js/Administrador/ingredientes/crear-ingrediente.js'
+])

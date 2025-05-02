@@ -25,40 +25,50 @@ class ProductoController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'descripcion' => 'required|string',
             'precio' => 'required|numeric|min:0',
             'imagen' => 'nullable|string|max:255',
-            'categoria_ids' => 'required|array',
+            'categoria_ids' => 'required|array|min:1',
             'categoria_ids.*' => 'exists:categorias,id',
             'ingrediente_ids' => 'nullable|array',
             'ingrediente_ids.*' => 'exists:ingredientes,id',
+            'ingrediente_obligatorio' => 'nullable|array',
+            'ingrediente_obligatorio.*' => 'in:1',
         ]);
 
         //verificamos si ya existe un producto con ese nombre
-        $existe = Producto::whereRaw('LOWER(nombre) = ?', [strtolower($request->nombre)])->exists();
-
-        if ($existe) {
+        if (Producto::whereRaw('LOWER(nombre) = ?', [strtolower($request->nombre)])->exists()) {
             return redirect()
                 ->route('productos.create')
+                ->withInput()
                 ->with('producto_duplicado', $request->nombre);
         }
 
         //asignamos placeholder si imagen está vacía
         $data = $request->only(['nombre', 'descripcion', 'precio', 'imagen']);
-        $data['imagen'] = $request->imagen ?: 'https://via.placeholder.com/150';
+        $data['imagen'] = $request->imagen ?: 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
 
-        //creamos un nuevo producto
+        //creamos el producto
         $producto = Producto::create($data);
+
+        //sincronizamos categorías
         $producto->categorias()->sync($request->categoria_ids);
+
+        //sincronizamos ingredientes con obligatoriedad
         if ($request->ingrediente_ids) {
-            $producto->ingredientes()->sync($request->ingrediente_ids);
+            $syncData = [];
+            foreach ($request->ingrediente_ids as $ingrediente_id) {
+                $syncData[$ingrediente_id] = [
+                    'es_obligatorio' => isset($request->ingrediente_obligatorio[$ingrediente_id]) ? 1 : 0
+                ];
+            }
+            $producto->ingredientes()->sync($syncData);
         }
 
-        return redirect()
-            ->route('productos.create')
-            ->with('productocreado', $request->nombre);
+        return redirect()->route('productos.index')->with('producto_creado', $producto->nombre);
+
     }
 
     public function update(Request $request, $id)
@@ -72,6 +82,8 @@ class ProductoController extends Controller
             'categoria_ids.*' => 'exists:categorias,id',
             'ingrediente_ids' => 'nullable|array',
             'ingrediente_ids.*' => 'exists:ingredientes,id',
+            'ingrediente_obligatorio' => 'nullable|array',
+            'ingrediente_obligatorio.*' => 'in:1',
         ]);
 
         $producto = Producto::findOrFail($id);
@@ -90,12 +102,26 @@ class ProductoController extends Controller
 
         //asignamos placeholder si imagen está vacía
         $data = $request->only(['nombre', 'descripcion', 'precio', 'imagen']);
-        $data['imagen'] = $request->imagen ?: 'https://via.placeholder.com/150';
+        $data['imagen'] = $request->imagen ?: 'https://cdn-icons-png.flaticon.com/512/1404/1404945.png';
 
-        //actualizamos datos
+        //actualizamos los datos
         $producto->update($data);
+
+        //sincronizamos categorías
         $producto->categorias()->sync($request->categoria_ids);
-        $producto->ingredientes()->sync($request->ingrediente_ids ?? []);
+
+        //sincronizamos los ingredientes con obligatoriedad
+        if ($request->ingrediente_ids) {
+            $syncData = [];
+            foreach ($request->ingrediente_ids as $ingrediente_id) {
+                $syncData[$ingrediente_id] = [
+                    'es_obligatorio' => isset($request->ingrediente_obligatorio[$ingrediente_id]) ? 1 : 0
+                ];
+            }
+            $producto->ingredientes()->sync($syncData);
+        } else {
+            $producto->ingredientes()->sync([]);
+        }
 
         return redirect()
             ->route('productos.index')
@@ -122,7 +148,7 @@ class ProductoController extends Controller
 
     public function edit($id)
     {
-        $producto = Producto::findOrFail($id);
+        $producto = Producto::with(['categorias', 'ingredientes'])->findOrFail($id);
         $categorias = Categoria::where('activo', 1)->get();
         $ingredientes = Ingrediente::where('activo', 1)->get();
         return view('Administrador.productos.edit', compact('producto', 'categorias', 'ingredientes'));

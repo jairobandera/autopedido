@@ -39,11 +39,9 @@ class UsuarioController extends Controller
         }
 
         //creamos un nuevo usuario
-        Usuario::create($request->only(['nombre', 'contrasena', 'rol']));
+        $producto = Usuario::create($request->only(['nombre', 'contrasena', 'rol']));
 
-        return redirect()
-            ->route('usuarios.create')
-            ->with('usuario_creado', $request->nombre);
+        return redirect()->route('usuarios.index')->with('usuario_creado', $producto->nombre);
     }
 
     public function update(Request $request, $id)
