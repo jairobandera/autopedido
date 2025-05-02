@@ -97,18 +97,113 @@
         </div>
     </div>
 
-    <!-- Cargar CSS y JS externos -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    @vite(['resources/css/Administrador/productos/crear-producto.css'])
+    <!-- Estilo inline -->
+    <style>
+        /* estilos para la tabla de ingredientes */
+        #ingredientes-table tbody tr td {
+            vertical-align: middle;
+        }
+    </style>
 
+    <!-- Scripts -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    @vite(['resources/js/Administrador/productos/crear-producto.js'])
 
-    <!-- Pasar datos de sesión al JavaScript -->
     <script>
-        // Convertir old('ingrediente_obligatorio') en una lista de IDs marcados como obligatorios
+        document.addEventListener('DOMContentLoaded', function () {
+            const categoriaSelect = $('#categoria_ids').select2({
+                placeholder: 'Seleccione una o más categorías',
+                allowClear: true,
+                width: '100%'
+            });
+
+            const ingredienteSelect = $('#ingrediente_ids').select2({
+                placeholder: 'Seleccione uno o más ingredientes',
+                allowClear: true,
+                width: '100%',
+                tags: false
+            });
+
+            const ingredientesTable = $('#ingredientes-table tbody');
+
+            const oldIngredientesObligatorios = window.oldIngredientesObligatorios || [];
+
+            function updateIngredientesTable() {
+                const selectedValues = ingredienteSelect.val() || [];
+                ingredientesTable.empty();
+
+                if (selectedValues.length === 0) {
+                    ingredientesTable.append('<tr><td colspan="3" class="text-center">No hay ingredientes seleccionados</td></tr>');
+                    return;
+                }
+
+                selectedValues.forEach(function (id) {
+                    if (!/^\d+$/.test(id)) {
+                        return;
+                    }
+
+                    const option = ingredienteSelect.find(`option[value="${id}"]`);
+                    const nombre = option.length ? option.text() : 'Desconocido';
+                    const isChecked = oldIngredientesObligatorios.includes(id.toString()) ? 'checked' : '';
+
+                    ingredientesTable.append(`
+                        <tr data-id="${id}">
+                            <td>${nombre}</td>
+                            <td>
+                                <input type="checkbox" name="ingrediente_obligatorio[${id}]" value="1" ${isChecked}>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm remove-ingrediente">Eliminar</button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            }
+
+            ingredienteSelect.on('change', function () {
+                updateIngredientesTable();
+            });
+
+            ingredientesTable.on('click', '.remove-ingrediente', function () {
+                const row = $(this).closest('tr');
+                const id = row.data('id');
+                ingredienteSelect.find(`option[value="${id}"]`).prop('selected', false);
+                ingredienteSelect.trigger('change');
+            });
+
+            setTimeout(() => {
+                updateIngredientesTable();
+                ingredienteSelect.trigger('change');
+            }, 100);
+
+            const imagenInput = document.getElementById('imagen');
+            const imagenPreview = document.getElementById('imagen-preview');
+            imagenInput.addEventListener('input', function () {
+                const url = imagenInput.value.trim();
+                imagenPreview.src = url || 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
+            });
+
+            if (window.productoDuplicado) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Nombre duplicado',
+                    text: `Ya existe un producto con el nombre "${window.productoDuplicado}".`,
+                    confirmButtonColor: '#dc3545',
+                });
+            }
+
+            if (window.productoCreado) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Producto creado!',
+                    text: `El producto "${window.productoCreado}" se ha creado exitosamente.`,
+                    confirmButtonColor: '#198754',
+                });
+            }
+        });
+
         window.oldIngredientesObligatorios = @json(collect(old('ingrediente_obligatorio', []))->keys()->toArray());
         @if(session('producto_duplicado'))
             window.productoDuplicado = {{ json_encode(session('producto_duplicado')) }};

@@ -9,6 +9,11 @@
     window.usuarioCreado = @json(session('usuario_creado'));
 </script>
 
+<style>
+    .form-label {
+        font-weight: bold;
+    }
+</style>
 
 <div class="text-center mb-4">
     <h2>Crear Nuevo Usuario</h2>
@@ -58,6 +63,29 @@
         </form>
     </div>
 </div>
-@endsection
 
-@vite(['resources/css/Administrador/usuarios/crear-usuario.css', 'resources/js/Administrador/usuarios/crear-usuario.js'])
+<!-- Librería SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.usuarioCreado) {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Usuario creado!',
+                text: `El usuario "${window.usuarioCreado}" se ha creado exitosamente.`,
+                confirmButtonColor: '#198754',
+            });
+        }
+
+        if (window.usuarioDuplicado) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Nombre duplicado',
+                text: `Ya existe un usuario con el nombre "${window.usuarioDuplicado}".`,
+                confirmButtonColor: '#dc3545',
+            });
+        }
+    });
+</script>
+@endsection

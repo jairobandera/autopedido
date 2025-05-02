@@ -102,7 +102,7 @@ class ProductoController extends Controller
 
         //asignamos placeholder si imagen está vacía
         $data = $request->only(['nombre', 'descripcion', 'precio', 'imagen']);
-        $data['imagen'] = $request->imagen ?: 'https://cdn-icons-png.flaticon.com/512/1404/1404945.png';
+        $data['imagen'] = $request->imagen ?: 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
 
         //actualizamos los datos
         $producto->update($data);

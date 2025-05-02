@@ -9,14 +9,14 @@
     </div>
 
     <div class="row justify-content-center">
-        {{-- Categorías --}}
+        {{-- Categorias --}}
         <div class="col-md-3 mb-4">
             <div class="card h-100 shadow-sm">
                 <img src="https://cdn-icons-png.flaticon.com/512/2917/2917242.png" class="card-img-top p-4"
-                    alt="Categorías">
+                    alt="Categorias">
                 <div class="card-body text-center">
-                    <h5 class="card-title">Categorías</h5>
-                    <button class="btn btn-primary">Gestionar</button>
+                    <h5 class="card-title">Productos</h5>
+                    <a href="{{ route('categorias.index') }}" class="btn btn-primary">Gestionar</a>
                 </div>
             </div>
         </div>

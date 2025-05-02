@@ -8,6 +8,11 @@
     window.usuarioDuplicado = @json(session('usuario_duplicado'));
 </script>
 
+<style>
+    .form-label {
+        font-weight: bold;
+    }
+</style>
 
 <div class="text-center mb-4">
     <h2>Editar Usuario</h2>
@@ -59,6 +64,20 @@
         </form>
     </div>
 </div>
-@endsection
 
-@vite(['resources/css/Administrador/usuarios/editar-usuario.css', 'resources/js/Administrador/usuarios/editar-usuario.js'])
+<!-- Librería SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.usuarioDuplicado) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Nombre duplicado',
+                text: `Ya existe un usuario con el nombre "${window.usuarioDuplicado}".`,
+                confirmButtonColor: '#dc3545',
+            });
+        }
+    });
+</script>
+@endsection
