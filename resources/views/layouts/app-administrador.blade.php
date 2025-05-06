@@ -55,8 +55,8 @@
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item"><a href="/administrador/dashboard" class="nav-link">Inicio</a></li>
-                    <li class="nav-item"><a href="{{ route('categorias.index') }}" class="nav-link">Categorías</a></li>
                     <li class="nav-item"><a href="{{ route('productos.index') }}" class="nav-link">Productos</a></li>
+                    <li class="nav-item"><a href="{{ route('categorias.index') }}" class="nav-link">Categorías</a></li>
                     <li class="nav-item"><a href="{{ route('ingredientes.index') }}" class="nav-link">Ingredientes</a></li>
                     <li class="nav-item"><a href="{{ route('usuarios.index') }}" class="nav-link">Usuarios</a></li>
                     <li class="nav-item"><a href="#" class="nav-link">Gráficas</a></li>
