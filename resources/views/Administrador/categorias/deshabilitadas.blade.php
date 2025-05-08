@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app-administrador')
 
 @section('title', 'Categorías deshabilitadas')
 
