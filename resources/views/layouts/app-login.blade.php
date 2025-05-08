@@ -12,62 +12,31 @@
 
     <style>
         body {
-            background-color: rgb(180, 180, 180);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-        .login-container {
-            background-color: rgb(235, 235, 235);
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            min-width: 1200px;
-            min-height: 600px;
-            display: flex;
-            flex-direction: row;
-        }
-        .logo-section {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: rgba(233, 233, 233, 0.1);
-            border-top-left-radius: 15px;
-            border-bottom-left-radius: 15px;
-            padding: 20px;
-        }
-        .form-section {
-            flex: 1;
-            padding: 40px;
-            background-color: #fff;
-            border-top-right-radius: 15px;
-            border-bottom-right-radius: 15px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .form-control {
-            border-radius: 8px;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary {
-            border-radius: 8px;
-            padding: 12px;
-            font-weight: 500;
-            transition: transform 0.2s;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
+            background-color: #f8f9fa;
         }
     </style>
 </head>
 
 <body>
 
-    <main class="login-container">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Eatsy</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Inicio</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-5">
         @yield('content')
     </main>
 
