@@ -20,7 +20,7 @@
 
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <form action="{{ route('productos.update', $producto->id) }}" method="POST">
+        <form action="{{ route('productos.update', $producto->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -42,15 +42,21 @@
             </div>
 
             <div class="mb-3">
-                <label for="imagen" class="form-label">Imagen (URL o nombre)</label>
-                <input type="text" name="imagen" id="imagen" class="form-control"
-                    value="{{ old('imagen', $producto->imagen) }}">
+                <label for="imagen" class="form-label">Subir Nueva Imagen (opcional)</label>
+                <input type="file" name="imagen" id="imagen" class="form-control" accept="image/*">
+            </div>
+
+            <div class="mb-3">
+                <label for="imagen_url" class="form-label">URL o Ruta de la Imagen Actual (opcional)</label>
+                <input type="text" name="imagen_url" id="imagen_url" class="form-control"
+                    value="{{ old('imagen_url', $producto->imagen) }}"
+                    placeholder="Ej: https://ejemplo.com/imagen.jpg o /storage/imagenes/productos/...">
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Previsualización de la Imagen</label>
                 <div>
-                    <img id="imagen-preview" src="{{ old('imagen', $producto->imagen) ?: 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png' }}"
+                    <img id="imagen-preview" src="{{ old('imagen_url', $producto->imagen) ?: 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png' }}"
                         alt="Previsualización" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
                 </div>
             </div>
@@ -99,14 +105,13 @@
     </div>
 </div>
 
-{{-- Variables desde PHP a JS --}}
-<script>
-    window.oldIngredientesObligatorios = @json(array_keys(old('ingrediente_obligatorio', [])));
-    window.existingObligatorios = @json($producto->ingredientes->where('pivot.es_obligatorio', 1)->pluck('id')->toArray());
-</script>
-
-{{-- Estilos Select2 e ingredientes --}}
+<!-- Estilo inline -->
 <style>
+    /* estilos para la tabla de ingredientes */
+    #ingredientes-table tbody tr td {
+        vertical-align: middle;
+    }
+
     .select2-container--default .select2-selection--multiple {
         border: 1px solid #000;
         border-radius: 0.25rem;
@@ -129,19 +134,22 @@
         color: white;
         margin-right: 5px;
     }
-
-    #ingredientes-table tbody tr td {
-        vertical-align: middle;
-    }
 </style>
 
-{{-- Librerías externas --}}
+<script>
+    window.oldIngredientesObligatorios = @json(array_keys(old('ingrediente_obligatorio', [])));
+    window.existingObligatorios = @json($producto->ingredientes->where('pivot.es_obligatorio', 1)->pluck('id')->map(function($id) { return $id . ''; }));
+</script>
+@endsection
+
+@section('scripts')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-{{-- Script de funcionalidad --}}
 <script>
+    console.log('existingObligatorios:', existingObligatorios);
     document.addEventListener('DOMContentLoaded', function () {
         const categoriaSelect = $('#categoria_ids').select2({
             placeholder: 'Seleccione una o más categorías',
@@ -157,8 +165,6 @@
         });
 
         const ingredientesTable = $('#ingredientes-table tbody');
-        const oldIngredientesObligatorios = window.oldIngredientesObligatorios || [];
-        const existingObligatorios = window.existingObligatorios || [];
 
         function updateIngredientesTable() {
             const selectedValues = ingredienteSelect.val() || [];
@@ -172,7 +178,7 @@
             selectedValues.forEach(function (id) {
                 const option = ingredienteSelect.find(`option[value="${id}"]`);
                 const nombre = option.length ? option.text() : 'Desconocido';
-                const isChecked = (oldIngredientesObligatorios.includes(id.toString()) || existingObligatorios.includes(parseInt(id))) ? 'checked' : '';
+                const isChecked = (window.oldIngredientesObligatorios.includes(id + '') || window.existingObligatorios.includes(id + '')) ? 'checked' : '';
 
                 ingredientesTable.append(`
                     <tr data-id="${id}">
@@ -199,31 +205,45 @@
             ingredienteSelect.trigger('change');
         });
 
-        setTimeout(() => {
-            updateIngredientesTable();
-            ingredienteSelect.trigger('change');
-        }, 100);
+        // Inicializar la tabla de ingredientes
+        updateIngredientesTable();
 
         const imagenInput = document.getElementById('imagen');
+        const imagenUrlInput = document.getElementById('imagen_url');
         const imagenPreview = document.getElementById('imagen-preview');
-        imagenInput.addEventListener('input', function () {
-            const url = imagenInput.value.trim();
-            imagenPreview.src = url || 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
-        });
-    });
-</script>
 
-@if(session('producto_duplicado'))
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Nombre duplicado',
-            text: 'Ya existe un producto con el nombre "{{ session('producto_duplicado') }}".',
-            confirmButtonColor: '#dc3545',
+        imagenInput.addEventListener('change', function () {
+            if (imagenInput.files && imagenInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imagenPreview.src = e.target.result;
+                };
+                reader.readAsDataURL(imagenInput.files[0]);
+            } else {
+                const urlOrPath = imagenUrlInput.value.trim();
+                imagenPreview.src = urlOrPath || 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
+            }
         });
+
+        imagenUrlInput.addEventListener('input', function () {
+            if (!imagenInput.files || imagenInput.files.length === 0) {
+                const urlOrPath = imagenUrlInput.value.trim();
+                imagenPreview.src = urlOrPath || 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
+            }
+        });
+
+        if (window.productoDuplicado) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Nombre duplicado',
+                text: `Ya existe un producto con el nombre "${window.productoDuplicado}".`,
+                confirmButtonColor: '#dc3545',
+            });
+        }
     });
+
+    @if(session('producto_duplicado'))
+        window.productoDuplicado = {{ json_encode(session('producto_duplicado')) }};
+    @endif
 </script>
-@endif
 @endsection

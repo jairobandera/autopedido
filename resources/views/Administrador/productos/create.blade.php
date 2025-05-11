@@ -20,7 +20,7 @@
 
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <form action="{{ route('productos.store') }}" method="POST">
+            <form action="{{ route('productos.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="mb-3">
                     <label for="nombre" class="form-label">Nombre del Producto</label>
@@ -40,15 +40,20 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="imagen" class="form-label">Imagen (URL o nombre)</label>
-                    <input type="text" name="imagen" id="imagen" class="form-control"
-                           placeholder="Ej: hamburguesa.jpg" value="{{ old('imagen') }}">
+                    <label for="imagen" class="form-label">Subir Imagen (opcional)</label>
+                    <input type="file" name="imagen" id="imagen" class="form-control" accept="image/*">
+                </div>
+
+                <div class="mb-3">
+                    <label for="imagen_url" class="form-label">O ingresar URL de la Imagen (opcional)</label>
+                    <input type="url" name="imagen_url" id="imagen_url" class="form-control"
+                           placeholder="Ej: https://ejemplo.com/imagen.jpg" value="{{ old('imagen_url') }}">
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Previsualización de la Imagen</label>
                     <div>
-                        <img id="imagen-preview" src="{{ old('imagen') ?: 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png' }}"
+                        <img id="imagen-preview" src="{{ old('imagen_url') ?: 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png' }}"
                              alt="Previsualización" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
                     </div>
                 </div>
@@ -103,8 +108,33 @@
         #ingredientes-table tbody tr td {
             vertical-align: middle;
         }
-    </style>
 
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid #000;
+            border-radius: 0.25rem;
+            padding: 0.375rem 0.75rem;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+            padding: 0;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #198754;
+            color: black;
+            border: none;
+            padding: 2px 5px;
+            margin: 2px;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: white;
+            margin-right: 5px;
+        }
+    </style>
+@endsection
+
+@section('scripts')
     <!-- Scripts -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
@@ -128,7 +158,8 @@
 
             const ingredientesTable = $('#ingredientes-table tbody');
 
-            const oldIngredientesObligatorios = window.oldIngredientesObligatorios || [];
+            // Obtener los ingredientes obligatorios desde old() o vacío
+            const oldIngredientesObligatorios = @json(collect(old('ingrediente_obligatorio', []))->keys()->toArray());
 
             function updateIngredientesTable() {
                 const selectedValues = ingredienteSelect.val() || [];
@@ -173,16 +204,30 @@
                 ingredienteSelect.trigger('change');
             });
 
-            setTimeout(() => {
-                updateIngredientesTable();
-                ingredienteSelect.trigger('change');
-            }, 100);
+            // Inicializar la tabla de ingredientes
+            updateIngredientesTable();
 
             const imagenInput = document.getElementById('imagen');
+            const imagenUrlInput = document.getElementById('imagen_url');
             const imagenPreview = document.getElementById('imagen-preview');
-            imagenInput.addEventListener('input', function () {
-                const url = imagenInput.value.trim();
-                imagenPreview.src = url || 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
+
+            imagenInput.addEventListener('change', function () {
+                if (imagenInput.files && imagenInput.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        imagenPreview.src = e.target.result;
+                    };
+                    reader.readAsDataURL(imagenInput.files[0]);
+                } else {
+                    imagenPreview.src = imagenUrlInput.value || 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
+                }
+            });
+
+            imagenUrlInput.addEventListener('input', function () {
+                if (!imagenInput.files || imagenInput.files.length === 0) {
+                    const url = imagenUrlInput.value.trim();
+                    imagenPreview.src = url || 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
+                }
             });
 
             if (window.productoDuplicado) {
@@ -204,12 +249,11 @@
             }
         });
 
-        window.oldIngredientesObligatorios = @json(collect(old('ingrediente_obligatorio', []))->keys()->toArray());
         @if(session('producto_duplicado'))
             window.productoDuplicado = {{ json_encode(session('producto_duplicado')) }};
         @endif
-        @if(session('productocreado'))
-            window.productoCreado = {{ json_encode(session('productocreado')) }};
+        @if(session('producto_creado'))
+            window.productoCreado = {{ json_encode(session('producto_creado')) }};
         @endif
     </script>
 @endsection

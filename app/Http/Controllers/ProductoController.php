@@ -6,6 +6,7 @@ use App\Models\Producto;
 use App\Models\Categoria;
 use App\Models\Ingrediente;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends Controller
 {
@@ -29,7 +30,8 @@ class ProductoController extends Controller
             'nombre' => 'required|string|max:255',
             'descripcion' => 'required|string',
             'precio' => 'required|numeric|min:0',
-            'imagen' => 'nullable|string|max:255',
+            'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048', //validacion para archivo de imagen
+            'imagen_url' => 'nullable|url|max:255', //validacion para URL
             'categoria_ids' => 'required|array|min:1',
             'categoria_ids.*' => 'exists:categorias,id',
             'ingrediente_ids' => 'nullable|array',
@@ -46,17 +48,29 @@ class ProductoController extends Controller
                 ->with('producto_duplicado', $request->nombre);
         }
 
-        //asignamos placeholder si imagen está vacía
-        $data = $request->only(['nombre', 'descripcion', 'precio', 'imagen']);
-        $data['imagen'] = $request->imagen ?: 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
+        //procesamos la imagen
+        $data = $request->only(['nombre', 'descripcion', 'precio']);
+        $defaultPlaceholder = 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
 
-        //creamos el producto
+        if ($request->hasFile('imagen')) {
+            //subir imagen desde el sistema
+            $path = $request->file('imagen')->store('imagenes/productos', 'public');
+            $data['imagen'] = '/storage/' . $path; //guardar ruta relativa
+        } elseif ($request->filled('imagen_url')) {
+            //usar URL proporcionada
+            $data['imagen'] = $request->imagen_url;
+        } else {
+            //usar placeholder por defecto
+            $data['imagen'] = $defaultPlaceholder;
+        }
+
+        //crear el producto
         $producto = Producto::create($data);
 
-        //sincronizamos categorías
+        //sincronizar categorías
         $producto->categorias()->sync($request->categoria_ids);
 
-        //sincronizamos ingredientes con obligatoriedad
+        //sincronizar ingredientes obligatorios
         if ($request->ingrediente_ids) {
             $syncData = [];
             foreach ($request->ingrediente_ids as $ingrediente_id) {
@@ -68,7 +82,6 @@ class ProductoController extends Controller
         }
 
         return redirect()->route('productos.index')->with('producto_creado', $producto->nombre);
-
     }
 
     public function update(Request $request, $id)
@@ -77,7 +90,8 @@ class ProductoController extends Controller
             'nombre' => 'required|string|max:255',
             'descripcion' => 'required|string',
             'precio' => 'required|numeric|min:0',
-            'imagen' => 'nullable|string|max:255',
+            'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048', //validacion para archivo de imagen
+            'imagen_url' => 'nullable|string|max:255',
             'categoria_ids' => 'required|array',
             'categoria_ids.*' => 'exists:categorias,id',
             'ingrediente_ids' => 'nullable|array',
@@ -100,17 +114,43 @@ class ProductoController extends Controller
                 ->with('producto_duplicado', $request->nombre);
         }
 
-        //asignamos placeholder si imagen está vacía
-        $data = $request->only(['nombre', 'descripcion', 'precio', 'imagen']);
-        $data['imagen'] = $request->imagen ?: 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
+        //procesamos la imagen
+        $data = $request->only(['nombre', 'descripcion', 'precio']);
+        $defaultPlaceholder = 'https://cdn-icons-png.flaticon.com/512/10446/10446694.png';
 
-        //actualizamos los datos
+        if ($request->hasFile('imagen')) {
+            //subimos nueva imagen desde el sistema
+            $path = $request->file('imagen')->store('imagenes/productos', 'public');
+            $data['imagen'] = '/storage/' . $path;
+
+            //eliminamos imagen anterior si no es el placeholder o una URL
+            if ($producto->imagen && !filter_var($producto->imagen, FILTER_VALIDATE_URL) && $producto->imagen !== $defaultPlaceholder) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $producto->imagen));
+            }
+        } elseif ($request->filled('imagen_url')) {
+            //usamos URL o ruta proporcionada
+            $data['imagen'] = $request->imagen_url;
+        } elseif ($request->has('imagen_url') && trim($request->imagen_url) === '') {
+            //si el campo imagen_url fue enviado pero está vacío, usar placeholder
+            $data['imagen'] = $defaultPlaceholder;
+
+            //borrar imagen anterior si era local y no el placeholder
+            if ($producto->imagen && !filter_var($producto->imagen, FILTER_VALIDATE_URL) && $producto->imagen !== $defaultPlaceholder) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $producto->imagen));
+            }
+        } else {
+            //mantener imagen existente
+            $data['imagen'] = $producto->imagen;
+        }
+
+
+        //actualizar los datos
         $producto->update($data);
 
-        //sincronizamos categorías
+        //sincronizar categorías
         $producto->categorias()->sync($request->categoria_ids);
 
-        //sincronizamos los ingredientes con obligatoriedad
+        //sincronizar los ingredientes con obligatoriedad
         if ($request->ingrediente_ids) {
             $syncData = [];
             foreach ($request->ingrediente_ids as $ingrediente_id) {
@@ -127,6 +167,7 @@ class ProductoController extends Controller
             ->route('productos.index')
             ->with('producto_editado', $producto->nombre);
     }
+
 
     public function destroy($id)
     {
