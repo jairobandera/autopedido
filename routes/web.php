@@ -5,12 +5,8 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\IngredienteController;
+use App\Http\Controllers\PromocionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-
-// 🔹 Registrar los middlewares
-use App\Http\Middleware\AdminMiddleware;
-use App\Http\Middleware\CajeroMiddleware;
-use App\Http\Middleware\CocinaMiddleware;
 
 require __DIR__ . '/auth.php';
 
@@ -58,7 +54,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/administrador/usuarios/{id}/habilitar', [UsuarioController::class, 'habilitar'])->name('usuarios.habilitar');
 
         // 🔹 Resource de USUARIOS
-        Route::resource('usuarios', UsuarioController::class);
+        Route::resource('/administrador/usuarios', UsuarioController::class);
 
         // 🔹 Rutas personalizadas de PRODUCTOS
         Route::get('/administrador/productos/deshabilitadas', [ProductoController::class, 'deshabilitadas'])->name('productos.deshabilitadas');
@@ -75,6 +71,16 @@ Route::middleware('auth')->group(function () {
 
         // 🔹 Resource de INGREDIENTES
         Route::resource('/administrador/ingredientes', IngredienteController::class)->except(['destroy']);
+
+        // 🔹 Rutas personalizadas de PROMOCIONES
+        Route::get('/administrador/promociones/deshabilitadas', [PromocionController::class, 'deshabilitadas'])
+            ->name('promociones.deshabilitadas');
+        Route::put('/administrador/promociones/{id}/habilitar', [PromocionController::class, 'habilitar'])
+            ->name('promociones.habilitar');
+
+        // Resource de PROMOCIONES
+        Route::resource('/administrador/promociones', PromocionController::class);
+
     });
 
     // 🔹 Rutas protegidas para cajeros (verificar rol)

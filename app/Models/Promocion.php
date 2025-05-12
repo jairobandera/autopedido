@@ -6,12 +6,25 @@ use Illuminate\Database\Eloquent\Model;
 
 class Promocion extends Model
 {
-    protected $fillable = ['nombre', 'descripcion', 'descuento', 'fecha_inicio', 'fecha_fin', 'activo'];
+    protected $table = 'promociones';
+    protected $fillable = [
+        'nombre',
+        'descuento',
+        'codigo',
+        'fecha_inicio',
+        'fecha_fin',
+        'activo',
+    ];
 
-    // Dentro de la clase Promocion
-    public function producto()
+    protected $casts = [
+        'fecha_inicio' => 'date',
+        'fecha_fin' => 'date',
+        'activo' => 'boolean',
+        'descuento' => 'decimal:2',
+    ];
+
+    public function productos()
     {
-        return $this->belongsTo(Producto::class, 'producto_id');
+        return $this->belongsToMany(Producto::class, 'producto_promocion');
     }
-
 }

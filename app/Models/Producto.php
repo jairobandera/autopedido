@@ -21,7 +21,7 @@ class Producto extends Model
 
     public function promociones()
     {
-        return $this->hasMany(Promocion::class, 'producto_id');
+        return $this->belongsToMany(Promocion::class, 'producto_promocion');
     }
 
     public function detallePedidos()

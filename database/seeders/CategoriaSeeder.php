@@ -10,8 +10,16 @@ class CategoriaSeeder extends Seeder
     public function run()
     {
         $nombres = [
-            'Combos', 'Hamburguesas', 'Pizzas', 'Empanadas', 'Bebidas',
-            'Postres', 'Ensaladas', 'Snacks', 'Salsas', 'Desayunos'
+            'Combos',
+            'Hamburguesas',
+            'Pizzas',
+            'Empanadas',
+            'Bebidas',
+            'Postres',
+            'Ensaladas',
+            'Entradas',
+            'Complementos',
+            'Platos Principales'
         ];
 
         foreach ($nombres as $nombre) {
