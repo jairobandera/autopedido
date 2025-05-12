@@ -20,11 +20,11 @@ class Producto extends Model
         return $this->belongsToMany(Ingrediente::class, 'ingrediente_producto');
     }
 
-    // Dentro de la clase Producto
     public function promociones()
     {
-        return $this->hasMany(Promocion::class, 'producto_id');
+        return $this->belongsToMany(Promocion::class, 'producto_promocion');
     }
+
 
 
     public function detallePedidos()
