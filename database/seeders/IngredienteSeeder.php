@@ -9,10 +9,28 @@ class IngredienteSeeder extends Seeder
 {
     public function run()
     {
-        for ($i = 0; $i < 15; $i++) {
+        $ingredientes = [
+            'Carne de Res',
+            'Pechuga de Pollo',
+            'Lechuga',
+            'Tomate',
+            'Pepinillos',
+            'Cebolla',
+            'Queso Cheddar',
+            'Bacon',
+            'Pan Artesanal',
+            'Salsa BBQ',
+            'Mayonesa',
+            'Ketchup',
+            'Mostaza',
+            'Jalapeños',
+            'Queso Mozzarella'
+        ];
+
+        foreach ($ingredientes as $nombre) {
             Ingrediente::create([
-                'nombre' => ucfirst(fake()->unique()->word()),
-                'descripcion' => fake()->sentence(5),
+                'nombre' => $nombre,
+                'descripcion' => "$nombre fresco y sabroso",
                 'activo' => true,
             ]);
         }

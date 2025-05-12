@@ -10,16 +10,22 @@ class PedidoSeeder extends Seeder
 {
     public function run()
     {
-        $usuarios = Usuario::where('rol', 'Cliente')->get();
+        $clientes = Usuario::where('rol', 'Cliente')->get();
 
-        foreach ($usuarios as $usuario) {
+        foreach ($clientes as $cliente) {
             for ($i = 0; $i < rand(1, 3); $i++) {
                 Pedido::create([
-                    'usuario_id' => $usuario->id,
-                    'total' => fake()->randomFloat(2, 200, 2000),
+                    'usuario_id' => $cliente->id,
+                    'total' => fake()->randomFloat(2, 200, 1500),
                     'metodo_pago' => fake()->randomElement(['Efectivo', 'MercadoPago']),
-                    'estado' => fake()->randomElement(['Recibido', 'En Preparacion', 'Listo', 'Entregado']),
-                    'codigo' => strtoupper(fake()->bothify('PED###??')),
+                    'estado' => fake()->randomElement([
+                        'Cancelado',
+                        'Recibido',
+                        'En Preparacion', // sin tilde, coincide con tu migración
+                        'Listo',
+                        'Entregado',
+                    ]),
+                    'codigo' => strtoupper(fake()->bothify('ORD-###-??')),
                 ]);
             }
         }

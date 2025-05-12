@@ -15,10 +15,14 @@ class PagoSeeder extends Seeder
         foreach ($pedidos as $pedido) {
             Pago::create([
                 'pedido_id' => $pedido->id,
-                'tipo' => $pedido->metodo_pago,
+                'tipo' => $pedido->metodo_pago, // Efectivo o MercadoPago
                 'monto' => $pedido->total,
                 'fecha' => now(),
-                'estado' => fake()->randomElement(['Completado', 'Pendiente', 'Fallido']),
+                'estado' => fake()->randomElement([
+                    'Completado', // debe coincidir exactamente
+                    'Pendiente',
+                    'Fallido',
+                ]),
             ]);
         }
     }

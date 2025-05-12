@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use App\Models\Producto;
 use App\Models\Ingrediente;
-use Illuminate\Support\Facades\DB;
 
 class IngredienteProductoSeeder extends Seeder
 {
@@ -14,9 +14,18 @@ class IngredienteProductoSeeder extends Seeder
         $productos = Producto::all();
         $ingredientes = Ingrediente::all();
 
+        // Si no hay productos o ingredientes, salimos
+        if ($productos->isEmpty() || $ingredientes->isEmpty()) {
+            return;
+        }
+
         foreach ($productos as $producto) {
-            $ingredientesAleatorios = $ingredientes->random(rand(2, 5));
-            foreach ($ingredientesAleatorios as $ingrediente) {
+            // Asigna entre 2 y 5 ingredientes (o menos si no hay tantos)
+            $max = min(5, $ingredientes->count());
+            $cantidad = rand(2, $max);
+            $seleccionados = $ingredientes->random($cantidad);
+
+            foreach ($seleccionados as $ingrediente) {
                 DB::table('ingrediente_producto')->insert([
                     'producto_id' => $producto->id,
                     'ingrediente_id' => $ingrediente->id,
