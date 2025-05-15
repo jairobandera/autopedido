@@ -14,13 +14,12 @@ class DetallePedidoSeeder extends Seeder
         $pedidos = Pedido::all();
         $productos = Producto::all();
 
-        // Si no hay pedidos o productos, salimos
         if ($pedidos->isEmpty() || $productos->isEmpty()) {
             return;
         }
 
         foreach ($pedidos as $pedido) {
-            // máximo 4 ítems o el total de productos disponibles
+            // Máximo 4 productos por pedido
             $max = min(4, $productos->count());
             $items = $productos->random(rand(1, $max));
 

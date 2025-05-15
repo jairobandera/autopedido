@@ -5,6 +5,7 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\IngredienteController;
+use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 // 🔹 Registrar los middlewares
@@ -79,8 +80,40 @@ Route::middleware('auth')->group(function () {
 
     // 🔹 Rutas protegidas para cajeros (verificar rol)
     Route::middleware('cajero')->group(function () {
-        // 🔹 Dashboard de Cajero
-        Route::view('/caja/dashboard', 'Caja.dashboard')->name('Caja.dashboard');
+        // Dashboard de Cajero – ahora con controller
+        Route::get('/caja/dashboard', [PedidoController::class, 'index'])
+            ->name('Caja.dashboard');
+
+        //Ultimo Pedido
+        // routes/web.php
+        Route::get('/caja/pedidos/latest', [PedidoController::class, 'latest'])
+            ->name('caja.pedidos.latest')
+            ->middleware('auth', 'cajero');
+        Route::get('/caja/pedidos/entregados', [PedidoController::class, 'entregados'])
+            ->name('caja.pedidos.entregados');
+        // Crear pedido
+        Route::get('/caja/pedidos/create', [PedidoController::class, 'create'])
+            ->name('caja.pedidos.create');
+        // Mostrar formulario de edición
+        Route::get('/caja/pedidos/{id}/edit', [PedidoController::class, 'edit'])
+            ->name('caja.pedidos.edit');
+        // Actualizar pedido
+        Route::patch('/caja/pedidos/{id}', [PedidoController::class, 'update'])
+            ->name('caja.pedidos.update');
+        Route::get('/caja/productos/{id}', [PedidoController::class, 'detalleProducto'])
+            ->name('caja.productos.show');
+        Route::get('/caja/productos', [PedidoController::class, 'buscarProductos']) //búsqueda/paginación de productos:
+            ->name('caja.productos.index');                                                  //detalle de un producto:
+        Route::post('/caja/pedidos', [PedidoController::class, 'store'])
+            ->name('caja.pedidos.store');
+        Route::get('/caja/pedidos/{id}', [App\Http\Controllers\PedidoController::class, 'show'])
+            ->name('caja.pedidos.show');
+        // Marca un pedido como 'Entregado' o el estado que necesites
+        Route::patch('/caja/pedidos/{id}/estado', [PedidoController::class, 'cambiarEstado'])
+            ->name('caja.pedidos.estado');
+
+        Route::resource('caja/pedidos', PedidoController::class, ['as' => 'caja']);
+
     });
 
     // 🔹 Rutas protegidas para cocina (verificar rol)

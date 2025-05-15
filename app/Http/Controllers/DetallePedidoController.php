@@ -62,4 +62,6 @@ class DetallePedidoController extends Controller
     {
         //
     }
+
+    
 }

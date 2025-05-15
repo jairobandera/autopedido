@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             PagoSeeder::class,
             PuntoPedidoSeeder::class,
             DetallePedidoSeeder::class,
+            DetallePedidoIngredienteQuitadoSeeder::class,
         ]);
     }
 }
