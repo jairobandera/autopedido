@@ -17,8 +17,6 @@ return new class extends Migration {
             $table->float('precio');
             $table->longText('imagen');
             $table->boolean('activo')->default(true);
-            /*$table->foreignId('categoria_id')->constrained('categorias')->onDelete('cascade');
-            $table->foreignId('promocion_id')->constrained('promociones')->onDelete('cascade');*/
             $table->timestamps();
         });
     }
