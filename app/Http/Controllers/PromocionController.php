@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Promocion;
 use Illuminate\Http\Request;
+use App\Models\Producto;
 use Carbon\Carbon;
 
 class PromocionController extends Controller
@@ -19,7 +20,9 @@ class PromocionController extends Controller
             $busqueda = strtolower($request->buscar);
             $query->whereRaw('LOWER(nombre) LIKE ?', ["%{$busqueda}%"]);
         }
-        $promociones = $query->paginate(10);
+        $promociones = $query
+            ->orderBy('created_at', 'desc')   // <-- o 'id','desc' si preferís
+            ->paginate(10);
 
         return view('Administrador.promociones.index', compact('promociones'));
     }
@@ -37,6 +40,8 @@ class PromocionController extends Controller
             'codigo' => 'nullable|string|max:50',
             'fecha_inicio' => 'nullable|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'products' => 'array',
+            'products.*' => 'integer|exists:productos,id',
         ]);
 
         // Duplicados por nombre
@@ -47,7 +52,8 @@ class PromocionController extends Controller
                 ->with('promocion_duplicada', $request->nombre);
         }
 
-        Promocion::create($request->only([
+        // 1) Creo la promoción
+        $promo = Promocion::create($request->only([
             'nombre',
             'descuento',
             'codigo',
@@ -55,9 +61,15 @@ class PromocionController extends Controller
             'fecha_fin'
         ]));
 
+        // 2) Asocio los productos (pivot producto_promocion)
+        if ($request->filled('products')) {
+            $promo->productos()->sync($request->input('products'));
+        }
+
+        // 3) Redirijo con éxito
         return redirect()
             ->route('promociones.create')
-            ->with('promocion_creada', $request->nombre);
+            ->with('promocion_creada', $promo->nombre);
     }
 
     public function edit($id)
@@ -65,7 +77,6 @@ class PromocionController extends Controller
         $promo = Promocion::findOrFail($id);
         return view('Administrador.promociones.edit', compact('promo'));
     }
-
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -74,10 +85,13 @@ class PromocionController extends Controller
             'codigo' => 'nullable|string|max:50',
             'fecha_inicio' => 'nullable|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'products' => 'array',
+            'products.*' => 'integer|exists:productos,id',
         ]);
 
         $promo = Promocion::findOrFail($id);
 
+        // Validación de nombre duplicado
         $existe = Promocion::whereRaw('LOWER(nombre) = ?', [strtolower($request->nombre)])
             ->where('id', '!=', $promo->id)
             ->exists();
@@ -88,6 +102,7 @@ class PromocionController extends Controller
                 ->with('promocion_duplicada', $request->nombre);
         }
 
+        // 1) Actualizo los campos de la promoción
         $promo->fill($request->only([
             'nombre',
             'descuento',
@@ -97,10 +112,15 @@ class PromocionController extends Controller
         ]));
         $promo->save();
 
+        // 2) Sincronizo los productos seleccionados (pivot producto_promocion)
+        $promo->productos()->sync($request->input('products', []));
+
+        // 3) Redirijo con éxito
         return redirect()
             ->route('promociones.index')
             ->with('promocion_editada', $promo->nombre);
     }
+
 
     public function destroy($id)
     {
@@ -148,5 +168,27 @@ class PromocionController extends Controller
             ->whereNotNull('fecha_fin')
             ->whereDate('fecha_fin', '<', Carbon::today())
             ->update(['activo' => 0]);
+    }
+    public function productosListar(Request $request)
+    {
+        $q = $request->query('q', '');
+        $query = Producto::where('activo', 1)
+            ->when($q, fn($qr) => $qr->where('nombre', 'like', "%{$q}%"));
+        $productos = $query->paginate(8)->withQueryString();
+        return response()->json([
+            'data' => $productos->items(),
+            'links' => $productos->links()->render(),
+        ]);
+    }
+
+    public function productos(Promocion $promo)
+    {
+        // cargamos solo id, nombre y precio
+        $lista = $promo
+            ->productos()
+            ->select('productos.id', 'productos.nombre', 'productos.precio')
+            ->get();
+
+        return response()->json($lista);
     }
 }

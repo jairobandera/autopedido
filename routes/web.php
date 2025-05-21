@@ -77,6 +77,12 @@ Route::middleware('auth')->group(function () {
             ->name('promociones.deshabilitadas');
         Route::put('/administrador/promociones/{id}/habilitar', [PromocionController::class, 'habilitar'])
             ->name('promociones.habilitar');
+        // Ruta para paginar/buscar productos desde el modal de crear promoción
+        Route::get('/administrador/promociones/productos-listar', [PromocionController::class, 'productosListar'])
+            ->name('promociones.productos.listar');
+        // Traer sólo los productos ya asociados a una promoción
+        Route::get('/administrador/promociones/{promo}/productos', [PromocionController::class, 'productos'])
+            ->name('promociones.productos');
 
         // Resource de PROMOCIONES
         Route::resource('/administrador/promociones', PromocionController::class);
