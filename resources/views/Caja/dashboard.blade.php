@@ -160,64 +160,54 @@
 
 @section('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-        const baseShowUrl = "{{ url('/caja/pedidos') }}";
-        const sound = document.getElementById('new-order-sound');
-        const checkUrl = "{{ route('caja.pedidos.latest') }}";
-        let lastId = {{ $pedidos->max('id') ?? 0 }};
-        let userHasInteracted = false;
-        const pedidosEnLocalStorage = JSON.parse(localStorage.getItem('pedidos')) || [];
+document.addEventListener('DOMContentLoaded', () => {
+            const baseShowUrl     = "{{ url('/caja/pedidos') }}";
+            const sound           = document.getElementById('new-order-sound');
+            const checkUrl        = "{{ route('caja.pedidos.latest') }}";
+            let lastId            = {{ $pedidos->max('id') ?? 0 }};
+            let lastTimestamp = {!! $lastCreatedAt
+                ? "new Date(" . json_encode($lastCreatedAt) . ")"
+                : 'new Date(0)'
+            !!};
+            let userHasInteracted = false;
 
-         // Función auxiliar: extrae sólo el ID (número) del primer <td>
-    function extraerIdDeRow(row) {
-        // El primer child nodeText del <td>
-        const td = row.querySelector('td');
-        return td.childNodes[0].nodeValue.trim();
-    }
-
-
-            // Detectamos interacción del usuario
-            document.body.addEventListener('click', () => {
+            // Consideramos interacción sólo al volver a la pestaña
+            window.addEventListener('focus', () => {
                 userHasInteracted = true;
             });
 
-         setInterval(() => {
-            const ahora = new Date().toLocaleTimeString();
-            console.log(`⏱ ${ahora} — comprobando nuevos pedidos… (lastId=${lastId})`);
+            // Poll cada 8s
+            setInterval(() => {
+                console.log(`🔄 Comprobando nuevos pedidos (lastId=${lastId}, lastTS=${lastTimestamp.toISOString()})`);
 
-            fetch("{{ route('caja.pedidos.latest') }}", {
-                headers: { 'Accept': 'application/json' },
-                credentials: 'same-origin'
-            })
-            .then(r => r.json())
-            .then(json => {
-                console.log(`   servidor responde id=${json.id}`);
-                if (json.id > lastId) {
-                    lastId = json.id;
+                fetch(checkUrl, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                })
+                .then(r => r.json())
+                .then(json => {
+                    const serverId = json.id;
+                    const serverTS = json.created_at ? new Date(json.created_at) : null;
 
-                    if (userHasInteracted) {
-                        // Reproducir sonido solo si el usuario ha interactuado previamente
-                        sound.currentTime = 0;
-                        sound.play()
-                            .then(() => {
-                                // Cuando el sonido termine, recargamos la página
-                                sound.addEventListener('ended', () => {
-                                    location.reload();
-                                }, { once: true });
-                            })
-                            .catch(err => {
-                                console.warn('Play() falló, recargando de inmediato', err);
-                                location.reload();
-                            });
-                    } else {
-                        // Si no hay interacción, simplemente recargamos la página sin sonido
-                        location.reload();
+                    // Sólo si es más alto y más reciente
+                    if (serverId > lastId && serverTS && serverTS > lastTimestamp) {
+                        lastId        = serverId;
+                        lastTimestamp = serverTS;
+
+                        if (userHasInteracted) {
+                            sound.currentTime = 0;
+                            sound.play()
+                                .then(() => {
+                                    sound.addEventListener('ended', () => location.reload(), { once: true });
+                                })
+                                .catch(() => location.reload());
+                        } else {
+                            location.reload();
+                        }
                     }
-                }
-            })
-            .catch(err => console.error('Error comprobando latest:', err));
-        }, 5000);
-
+                })
+                .catch(err => console.error('Error comprobando latest:', err));
+            }, 8000);
             // Ver Pedido (igual que antes)...
             document.querySelectorAll('.btn-ver').forEach(btn => {
                 btn.addEventListener('click', () => {

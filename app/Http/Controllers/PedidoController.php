@@ -33,7 +33,13 @@ class PedidoController extends Controller
             ->paginate(5)
             ->withQueryString(); // mantiene "search" en la query
 
-        return view('Caja.dashboard', compact('pedidos'));
+        // Agregá esto:
+        $ultimo = Pedido::orderBy('id', 'desc')->first();
+        $lastCreatedAt = $ultimo
+            ? $ultimo->created_at->toIso8601String()
+            : null;
+
+        return view('Caja.dashboard', compact('pedidos', 'lastCreatedAt'));
     }
 
     /**
@@ -274,12 +280,20 @@ class PedidoController extends Controller
     public function latest()
     {
         $ultimo = Pedido::orderBy('id', 'desc')->first();
+
+        // Si no hay pedidos, devolvemos nulls
+        if (!$ultimo) {
+            return response()->json([
+                'id' => 0,
+                'created_at' => null,
+            ]);
+        }
+
         return response()->json([
-            'id' => $ultimo ? $ultimo->id : 0,
-            'estado' => $ultimo ? $ultimo->estado : null,
+            'id' => $ultimo->id,
+            // ISO 8601, en UTC (o tu zona)
+            'created_at' => $ultimo->created_at->toIso8601String(),
         ]);
     }
-
-
 
 }
