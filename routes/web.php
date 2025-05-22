@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CocinaController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\UsuarioController;
@@ -25,7 +26,7 @@ Route::get('/', function () {
         } elseif ($user->rol === 'Cajero') {
             return redirect()->route('Caja.dashboard');
         } elseif ($user->rol === 'Cocina') {
-            return redirect()->route('Cocina.dashboard');
+            return redirect()->route('cocina.dashboard');
         }
     }
 
@@ -119,7 +120,11 @@ Route::middleware('auth')->group(function () {
     // 🔹 Rutas protegidas para cocina (verificar rol)
     Route::middleware('cocina')->group(function () {
         // 🔹 Dashboard de Cocina
-        Route::view('/cocina/dashboard', 'Cocina.dashboard')->name('Cocina.dashboard');
+        Route::get('/cocina/dashboard', [CocinaController::class, 'index'])->name('cocina.dashboard');
+        Route::patch('/cocina/pedidos/{pedido}/estado', [CocinaController::class, 'marcarListo'])
+            ->name('cocina.pedidos.estado');
+        Route::get('/cocina/pedidos/nuevos', [CocinaController::class, 'nuevos'])
+            ->name('cocina.pedidos.nuevos');
     });
 
     // 🔹 Rutas de logout
