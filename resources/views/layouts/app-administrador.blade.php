@@ -10,9 +10,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <!-- Select2 -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
     <style>
         html, body {
             height: 100%;
@@ -57,6 +54,7 @@
                     <li class="nav-item"><a href="/administrador/dashboard" class="nav-link">Inicio</a></li>
                     <li class="nav-item"><a href="{{ route('productos.index') }}" class="nav-link">Productos</a></li>
                     <li class="nav-item"><a href="{{ route('categorias.index') }}" class="nav-link">Categorías</a></li>
+                    <li class="nav-item"><a href="{{ route('promociones.index') }}" class="nav-link">Promociones</a></li>
                     <li class="nav-item"><a href="{{ route('ingredientes.index') }}" class="nav-link">Ingredientes</a></li>
                     <li class="nav-item"><a href="{{ route('usuarios.index') }}" class="nav-link">Usuarios</a></li>
                     <li class="nav-item"><a href="#" class="nav-link">Gráficas</a></li>
@@ -84,9 +82,8 @@
             <p class="mb-0">&copy; {{ date('Y') }} Eatsy - Panel de Administración</p>
         </div>
     </footer>
-
-    <!-- Select2 -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <!-- Bootstrap JS (Popper + JS) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     @yield('scripts')
 

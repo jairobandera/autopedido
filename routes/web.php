@@ -7,12 +7,8 @@ use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\IngredienteController;
 use App\Http\Controllers\PedidoController;
+use App\Http\Controllers\PromocionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-
-// 🔹 Registrar los middlewares
-use App\Http\Middleware\AdminMiddleware;
-use App\Http\Middleware\CajeroMiddleware;
-use App\Http\Middleware\CocinaMiddleware;
 
 require __DIR__ . '/auth.php';
 
@@ -77,6 +73,22 @@ Route::middleware('auth')->group(function () {
 
         // 🔹 Resource de INGREDIENTES
         Route::resource('/administrador/ingredientes', IngredienteController::class)->except(['destroy']);
+
+        // 🔹 Rutas personalizadas de PROMOCIONES
+        Route::get('/administrador/promociones/deshabilitadas', [PromocionController::class, 'deshabilitadas'])
+            ->name('promociones.deshabilitadas');
+        Route::put('/administrador/promociones/{id}/habilitar', [PromocionController::class, 'habilitar'])
+            ->name('promociones.habilitar');
+        // Ruta para paginar/buscar productos desde el modal de crear promoción
+        Route::get('/administrador/promociones/productos-listar', [PromocionController::class, 'productosListar'])
+            ->name('promociones.productos.listar');
+        // Traer sólo los productos ya asociados a una promoción
+        Route::get('/administrador/promociones/{promo}/productos', [PromocionController::class, 'productos'])
+            ->name('promociones.productos');
+
+        // Resource de PROMOCIONES
+        Route::resource('/administrador/promociones', PromocionController::class);
+
     });
 
     // 🔹 Rutas protegidas para cajeros (verificar rol)
