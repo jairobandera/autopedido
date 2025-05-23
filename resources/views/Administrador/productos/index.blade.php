@@ -26,9 +26,9 @@
             <thead class="table-dark">
                 <tr>
                     <th>ID</th>
+                    <th>Imagen</th>
                     <th>Nombre</th>
                     <th>Precio</th>
-                    <th>Imagen</th>
                     <th>Categorías</th>
                     <th>Ingredientes</th>
                     <th>Acciones</th>
@@ -38,8 +38,6 @@
                 @forelse($productos as $producto)
                     <tr>
                         <td>{{ $producto->id }}</td>
-                        <td>{{ $producto->nombre }}</td>
-                        <td>${{ number_format($producto->precio, 2) }}</td>
                         <td>
                             @if($producto->imagen)
                                 <img src="{{ $producto->imagen }}" alt="{{ $producto->nombre }}"
@@ -48,6 +46,8 @@
                                 Sin imagen
                             @endif
                         </td>
+                        <td>{{ $producto->nombre }}</td>
+                        <td>${{ number_format($producto->precio, 2) }}</td>
                         <td>{{ $producto->categorias->pluck('nombre')->join(', ') ?: 'Sin categorías' }}</td>
                         <td>{{ $producto->ingredientes->pluck('nombre')->join(', ') ?: 'Sin ingredientes' }}</td>
                         <td>
