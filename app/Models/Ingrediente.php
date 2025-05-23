@@ -12,4 +12,14 @@ class Ingrediente extends Model
     {
         return $this->belongsToMany(Producto::class, 'ingrediente_producto');
     }
+
+    public function detallesQuitados()
+    {
+        return $this->belongsToMany(
+            DetallePedido::class,
+            'detalle_pedido_ingrediente_quitado',
+            'ingrediente_id',
+            'detalle_pedido_id'
+        )->withTimestamps();
+    }
 }

@@ -16,7 +16,7 @@ class Pedido extends Model
 
     public function usuario()
     {
-        return $this->belongsTo(Usuario::class);
+        return $this->belongsTo(Usuario::class, 'usuario_id');
     }
 
     public function puntosPedidos()
@@ -33,8 +33,4 @@ class Pedido extends Model
     {
         return $this->belongsTo(Cliente::class, 'cliente_id');
     }
-
-
-
-
 }

@@ -25,6 +25,8 @@ class Promocion extends Model
 
     public function productos()
     {
-        return $this->belongsToMany(Producto::class, 'producto_promocion');
+        return $this->belongsToMany(Producto::class, 'producto_promocion')
+            ->withTimestamps();  // <-- Esto es clave
+
     }
 }
