@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\IngredienteController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\PromocionController;
+use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 require __DIR__ . '/auth.php';
@@ -23,6 +24,8 @@ Route::get('/', function () {
             return redirect()->route('Caja.dashboard');
         } elseif ($user->rol === 'Cocina') {
             return redirect()->route('Cocina.dashboard');
+        } elseif ($user->rol === 'Cliente') {
+            return redirect()->route('Cliente.dashboard');
         }
     }
 
@@ -88,7 +91,6 @@ Route::middleware('auth')->group(function () {
 
         // Resource de PROMOCIONES
         Route::resource('/administrador/promociones', PromocionController::class);
-
     });
 
     // 🔹 Rutas protegidas para cajeros (verificar rol)
@@ -126,7 +128,6 @@ Route::middleware('auth')->group(function () {
             ->name('caja.pedidos.estado');
 
         Route::resource('caja/pedidos', PedidoController::class, ['as' => 'caja']);
-
     });
 
     // 🔹 Rutas protegidas para cocina (verificar rol)
@@ -137,6 +138,16 @@ Route::middleware('auth')->group(function () {
             ->name('cocina.pedidos.estado');
         Route::get('/cocina/pedidos/nuevos', [CocinaController::class, 'nuevos'])
             ->name('cocina.pedidos.nuevos');
+    });
+
+    // 🔹 Rutas protegidas para cliente (verificar rol)
+    Route::middleware('cliente')->group(function () {
+        // 🔹 Dashboard de Cliente
+        Route::get('/cliente/dashboard', [ClienteController::class, 'index'])->name('Cliente.dashboard');
+        Route::post('/cliente/cart/add', [ClienteController::class, 'addToCart'])->name('Cliente.addToCart');
+        Route::post('/cliente/cart/update', [ClienteController::class, 'updateCart'])->name('Cliente.updateCart');
+        Route::post('/cliente/cart/remove', [ClienteController::class, 'removeFromCart'])->name('Cliente.removeFromCart');
+        Route::post('/cliente/pago/procesar', [ClienteController::class, 'procesarPago'])->name('Cliente.procesarPago');
     });
 
     // 🔹 Rutas de logout
