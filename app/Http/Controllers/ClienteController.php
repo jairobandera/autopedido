@@ -74,47 +74,49 @@ class ClienteController extends Controller
     }
 
     public function addToCart(Request $request)
-{
-    $productoId = $request->input('producto_id');
-    $ingredientes = is_array($request->input('ingredientes')) ? $request->input('ingredientes') : [];
-    $cantidad = max(1, (int)$request->input('cantidad', 1));
+    {
+        $productoId = $request->input('producto_id');
+        $quitados = is_array($request->input('quitados')) ? $request->input('quitados') : [];
+        $cantidad = max(1, (int)$request->input('cantidad', 1));
 
-    $producto = Producto::with(['ingredientes' => function ($q) {
-        $q->where('activo', 1);
-    }])->findOrFail($productoId);
+        $producto = Producto::with(['ingredientes' => function ($q) {
+            $q->where('activo', 1);
+        }])->findOrFail($productoId);
 
-    // Validar ingredientes obligatorios
-    $obligatorios = $producto->ingredientes
-        ->where('pivot.es_obligatorio', true)
-        ->pluck('id')
-        ->toArray();
-    if (array_diff($obligatorios, $ingredientes)) {
+        // Validar que no se intenten quitar ingredientes obligatorios
+        $obligatorios = $producto->ingredientes
+            ->where('pivot.es_obligatorio', true)
+            ->pluck('id')
+            ->toArray();
+        if (!empty(array_intersect($quitados, $obligatorios))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pueden quitar ingredientes obligatorios.'
+            ], 422);
+        }
+
+        $carrito = session('carrito', []);
+
+        // Crear una clave única para el item en el carrito (basada en producto_id y quitados)
+        $quitadosSorted = collect($quitados)->sort()->values()->all();
+        $itemKey = $productoId . ':' . (empty($quitadosSorted) ? '' : implode(',', $quitadosSorted));
+
+        $carrito[$itemKey] = [
+            'producto_id' => $productoId,
+            'nombre' => $producto->nombre,
+            'precio' => $producto->precio,
+            'quitados' => $quitadosSorted,
+            'cantidad' => isset($carrito[$itemKey]) ? $carrito[$itemKey]['cantidad'] + $cantidad : $cantidad,
+        ];
+
+        session(['carrito' => $carrito]);
+
         return response()->json([
-            'success' => false,
-            'message' => 'Faltan ingredientes obligatorios.'
-        ], 422);
+            'success' => true,
+            'message' => 'Producto añadido al carrito',
+            'carrito' => $carrito,
+        ]);
     }
-
-    $carrito = session('carrito', []);
-
-    $itemKey = $productoId . ':' . (empty($ingredientes) ? '' : implode(',', collect($ingredientes)->sort()->values()->all()));
-
-    $carrito[$itemKey] = [
-        'producto_id' => $productoId,
-        'nombre' => $producto->nombre,
-        'precio' => $producto->precio,
-        'ingredientes' => $ingredientes,
-        'cantidad' => isset($carrito[$itemKey]) ? $carrito[$itemKey]['cantidad'] + $cantidad : $cantidad,
-    ];
-
-    session(['carrito' => $carrito]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Producto añadido al carrito',
-        'carrito' => $carrito,
-    ]);
-}
 
     public function updateCart(Request $request)
     {
@@ -183,10 +185,21 @@ class ClienteController extends Controller
         $total = 0;
         $now = Carbon::now();
 
+        // Crear el pedido
+        $codigo = strtoupper('ORD-' . rand(100, 999) . '-' . Str::random(2));
+        $pedido = Pedido::create([
+            'usuario_id' => Auth::id(),
+            'total' => 0, // Se actualizará después
+            'metodo_pago' => $metodoPago,
+            'estado' => 'Recibido',
+            'codigo' => $codigo,
+        ]);
+
         foreach ($carrito as $item) {
-            $producto = Producto::find($item['producto_id']);
+            $producto = Producto::findOrFail($item['producto_id']);
             $precio = $item['precio'];
-            
+
+            // Aplicar promoción si existe
             $promocion = Promocion::where('activo', true)
                 ->where('fecha_inicio', '<=', $now)
                 ->where('fecha_fin', '>=', $now)
@@ -202,50 +215,35 @@ class ClienteController extends Controller
 
             $subtotal = $precio * $item['cantidad'];
             $total += $subtotal;
-        }
 
-        $codigo = strtoupper('ORD-' . rand(100, 999) . '-' . Str::random(2));
-
-        $pedido = Pedido::create([
-            'usuario_id' => Auth::id(),
-            'total' => $total,
-            'metodo_pago' => $metodoPago,
-            'estado' => 'Recibido',
-            'codigo' => $codigo,
-        ]);
-
-        foreach ($carrito as $item) {
-            $producto = Producto::find($item['producto_id']);
-            $precio = $item['precio'];
-            
-            if ($promocion = Promocion::where('activo', true)
-                ->where('fecha_inicio', '<=', $now)
-                ->where('fecha_fin', '>=', $now)
-                ->whereHas('productos', function ($query) use ($item) {
-                    $query->where('producto_id', $item['producto_id']);
-                })
-                ->first()) {
-                $descuento = $promocion->descuento / 100;
-                $precio = $precio * (1 - $descuento);
-            }
-
-            DetallePedido::create([
+            // Crear detalle del pedido
+            $detalle = DetallePedido::create([
                 'pedido_id' => $pedido->id,
                 'producto_id' => $item['producto_id'],
                 'fecha_hora' => $now,
                 'cantidad' => $item['cantidad'],
-                'subtotal' => $precio * $item['cantidad'],
+                'subtotal' => $subtotal,
             ]);
+
+            // Asignar ingredientes quitados
+            if (!empty($item['quitados'])) {
+                $detalle->ingredientesQuitados()->attach($item['quitados']);
+            }
         }
 
+        // Actualizar el total del pedido
+        $pedido->update(['total' => $total]);
+
+        // Crear el pago
         Pago::create([
             'pedido_id' => $pedido->id,
             'tipo' => $metodoPago,
             'monto' => $total,
             'fecha' => $now,
-            'estado' => 'Pendiente',
+            'estado' => $metodoPago === 'Efectivo' ? 'Completado' : 'Pendiente',
         ]);
 
+        // Limpiar el carrito
         session()->forget('carrito');
 
         return response()->json([

@@ -71,10 +71,10 @@
                                 </div>
                             </div>
                             <div class="px-6 pb-4 flex flex-col justify-end flex-1">
-                                <template x-if="producto.ingredientes && producto.ingredientes.length > 0 && producto.ingredientes.filter(i => !i.pivot.es_obligatorio).length > 0">
+                                <template x-if="producto.ingredientes && producto.ingredientes.length > 0">
                                     <div>
                                         <button type="button" @click="open = !open" class="text-orange-600 hover:text-orange-800 flex items-center text-lg transition transform hover:scale-105">
-                                            <span>Ingredientes</span>
+                                            <span>Personalizar Ingredientes</span>
                                             <svg :class="{ 'rotate-180': open }" class="w-6 h-6 ml-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                             </svg>
@@ -86,7 +86,7 @@
                                             x-transition:leave-start="opacity-100 translate-y-0"
                                             x-transition:leave-end="opacity-0 translate-y-2"
                                             class="mt-3">
-                                            <h3 class="text-md font-medium text-gray-700">Personalizar Ingredientes</h3>
+                                            <h3 class="text-md font-medium text-gray-700">Quitar Ingredientes</h3>
                                             <template x-for="ingrediente in producto.ingredientes" :key="ingrediente.id">
                                                 <div class="flex items-center mt-2">
                                                     <input
@@ -94,14 +94,14 @@
                                                         :name="'ingredientes_' + producto.id"
                                                         :value="ingrediente.id"
                                                         :id="'ingrediente_' + producto.id + '_' + ingrediente.id"
-                                                        :checked="ingrediente.pivot.es_obligatorio || ingredientesSeleccionados[Number(producto.id)]?.includes(Number(ingrediente.id)) || !ingredientesSeleccionados[Number(producto.id)]"
+                                                        :checked="!ingredientesQuitados[Number(producto.id)]?.includes(Number(ingrediente.id))"
                                                         :disabled="ingrediente.pivot.es_obligatorio ? true : false"
                                                         class="h-6 w-6 border-gray-300 rounded focus:ring-orange-500"
                                                         :class="{
                                                             'text-orange-600 cursor-not-allowed opacity-50': ingrediente.pivot.es_obligatorio,
                                                             'text-blue-600': !ingrediente.pivot.es_obligatorio
                                                         }"
-                                                        @change="updateIngredientes(producto.id, ingrediente.id, $event.target.checked)">
+                                                        @change="updateIngredientesQuitados(producto.id, ingrediente.id, !$event.target.checked)">
                                                     <label :for="'ingrediente_' + producto.id + '_' + ingrediente.id"
                                                         class="ml-3 text-md"
                                                         :class="{ 'text-gray-400': ingrediente.pivot.es_obligatorio, 'text-gray-600': !ingrediente.pivot.es_obligatorio }"
@@ -198,8 +198,8 @@
                                         class="flex justify-between items-center">
                                         <div>
                                             <p class="text-lg font-medium" x-text="item.nombre"></p>
-                                            <template x-if="item.ingredientes && item.ingredientes.length > 0">
-                                                <p class="text-sm text-gray-600" x-text="'Ingredientes: ' + item.ingredientes_nombres.join(', ')"></p>
+                                            <template x-if="item.quitados && item.quitados.length > 0">
+                                                <p class="text-sm text-gray-600" x-text="'Sin: ' + item.quitados_nombres.join(', ')"></p>
                                             </template>
                                             <p class="text-md text-gray-600" x-text="'Subtotal: $' + (item.precio * item.cantidad).toFixed(2)"></p>
                                         </div>
@@ -336,7 +336,7 @@
                 items: window._appData.items,
                 orden: window._appData.orden,
                 categoria_id: window._appData.categoria_id,
-                ingredientesSeleccionados: {},
+                ingredientesQuitados: {},
                 showModal: false,
                 showEmptyCartModal: false,
                 showResultadoModal: false,
@@ -351,15 +351,13 @@
                 init() {
                     Object.keys(this.items).forEach(key => {
                         this.items[key].cantidad = this.items[key].cantidad || 1;
-                        this.items[key].ingredientes_nombres = this.items[key].ingredientes ?
-                            this.getIngredientesNombres(this.items[key].ingredientes) : [];
+                        this.items[key].quitados_nombres = this.items[key].quitados ?
+                            this.getIngredientesNombres(this.items[key].quitados) : [];
                     });
                     this.productos.data.forEach(producto => {
                         const productoId = Number(producto.id);
-                        this.ingredientesSeleccionados[productoId] = producto.ingredientes
-                            .filter(i => !i.pivot.es_obligatorio)
-                            .map(i => Number(i.id));
-                        console.log(`Inicializado ingredientesSeleccionados[${productoId}]:`, this.ingredientesSeleccionados[productoId]);
+                        this.ingredientesQuitados[productoId] = [];
+                        console.log(`Inicializado ingredientesQuitados[${productoId}]:`, this.ingredientesQuitados[productoId]);
                     });
                 },
 
@@ -381,10 +379,8 @@
                         this.categoria_id = categoriaId;
                         this.productos.data.forEach(producto => {
                             const productoId = Number(producto.id);
-                            this.ingredientesSeleccionados[productoId] = producto.ingredientes
-                                .filter(i => !i.pivot.es_obligatorio)
-                                .map(i => Number(i.id));
-                            console.log(`Cargado ingredientesSeleccionados[${productoId}]:`, this.ingredientesSeleccionados[productoId]);
+                            this.ingredientesQuitados[productoId] = [];
+                            console.log(`Cargado ingredientesQuitados[${productoId}]:`, this.ingredientesQuitados[productoId]);
                         });
                     } catch (error) {
                         console.error('Error al cargar los productos:', error);
@@ -396,18 +392,9 @@
                         const producto = this.productos.data.find(p => p.id === productoId);
                         if (!producto) throw new Error('Producto no encontrado');
 
-                        let ingredientes = [];
-                        if (producto.ingredientes && producto.ingredientes.length > 0) {
-                            const checkboxes = document.querySelectorAll(`input[name="ingredientes_${productoId}"]:checked`);
-                            ingredientes = Array.from(checkboxes).map(cb => Number(cb.value));
-                            producto.ingredientes.forEach(ing => {
-                                if (ing.pivot.es_obligatorio && !ingredientes.includes(Number(ing.id))) {
-                                    ingredientes.push(Number(ing.id));
-                                }
-                            });
-                        }
+                        const quitados = this.ingredientesQuitados[productoId] || [];
 
-                        console.log('Añadiendo al carrito:', { productoId, ingredientes });
+                        console.log('Añadiendo al carrito:', { productoId, quitados });
 
                         const response = await fetch(window._appData.rutas.addToCart, {
                             method: 'POST',
@@ -417,7 +404,7 @@
                             },
                             body: JSON.stringify({
                                 producto_id: productoId,
-                                ingredientes: ingredientes,
+                                quitados: quitados,
                                 cantidad: 1,
                             }),
                         });
@@ -426,8 +413,8 @@
                         if (data.success) {
                             this.items = data.carrito;
                             Object.keys(this.items).forEach(key => {
-                                this.items[key].ingredientes_nombres = this.items[key].ingredientes ?
-                                    this.getIngredientesNombres(this.items[key].ingredientes) : [];
+                                this.items[key].quitados_nombres = this.items[key].quitados ?
+                                    this.getIngredientesNombres(this.items[key].quitados) : [];
                             });
                             console.log('Éxito:', data.message);
                         } else {
@@ -457,8 +444,8 @@
                         if (data.success) {
                             this.items = data.carrito;
                             Object.keys(this.items).forEach(key => {
-                                this.items[key].ingredientes_nombres = this.items[key].ingredientes ?
-                                    this.getIngredientesNombres(this.items[key].ingredientes) : [];
+                                this.items[key].quitados_nombres = this.items[key].quitados ?
+                                    this.getIngredientesNombres(this.items[key].quitados) : [];
                             });
                             console.log('Éxito:', data.message);
                         } else {
@@ -486,8 +473,8 @@
                         if (data.success) {
                             this.items = data.carrito;
                             Object.keys(this.items).forEach(key => {
-                                this.items[key].ingredientes_nombres = this.items[key].ingredientes ?
-                                    this.getIngredientesNombres(this.items[key].ingredientes) : [];
+                                this.items[key].quitados_nombres = this.items[key].quitados ?
+                                    this.getIngredientesNombres(this.items[key].quitados) : [];
                             });
                             console.log('Éxito:', data.message);
                         } else {
@@ -551,21 +538,21 @@
                     }
                 },
 
-                updateIngredientes(productoId, ingredienteId, checked) {
-                    console.log('Evento updateIngredientes:', { productoId, ingredienteId, checked });
+                updateIngredientesQuitados(productoId, ingredienteId, isRemoved) {
+                    console.log('Evento updateIngredientesQuitados:', { productoId, ingredienteId, isRemoved });
                     productoId = Number(productoId);
                     ingredienteId = Number(ingredienteId);
-                    if (!this.ingredientesSeleccionados[productoId]) {
-                        this.ingredientesSeleccionados[productoId] = [];
+                    if (!this.ingredientesQuitados[productoId]) {
+                        this.ingredientesQuitados[productoId] = [];
                     }
-                    if (checked) {
-                        if (!this.ingredientesSeleccionados[productoId].includes(ingredienteId)) {
-                            this.ingredientesSeleccionados[productoId].push(ingredienteId);
+                    if (isRemoved) {
+                        if (!this.ingredientesQuitados[productoId].includes(ingredienteId)) {
+                            this.ingredientesQuitados[productoId].push(ingredienteId);
                         }
                     } else {
-                        this.ingredientesSeleccionados[productoId] = this.ingredientesSeleccionados[productoId].filter(id => id !== ingredienteId);
+                        this.ingredientesQuitados[productoId] = this.ingredientesQuitados[productoId].filter(id => id !== ingredienteId);
                     }
-                    console.log('Estado actual de ingredientesSeleccionados para producto', productoId, ':', this.ingredientesSeleccionados[productoId]);
+                    console.log('Estado actual de ingredientesQuitados para producto', productoId, ':', this.ingredientesQuitados[productoId]);
                 },
 
                 getIngredientesNombres(ingredienteIds) {
