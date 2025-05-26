@@ -189,7 +189,7 @@ class ClienteController extends Controller
         $codigo = strtoupper('ORD-' . rand(100, 999) . '-' . Str::random(2));
         $pedido = Pedido::create([
             'usuario_id' => Auth::id(),
-            'total' => 0, // Se actualizará después
+            'total' => 0,
             'metodo_pago' => $metodoPago,
             'estado' => 'Recibido',
             'codigo' => $codigo,
@@ -240,7 +240,7 @@ class ClienteController extends Controller
             'tipo' => $metodoPago,
             'monto' => $total,
             'fecha' => $now,
-            'estado' => $metodoPago === 'Efectivo' ? 'Completado' : 'Pendiente',
+            'estado' => 'Pendiente',
         ]);
 
         // Limpiar el carrito

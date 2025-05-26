@@ -38,6 +38,15 @@ cp .env.example .env
 # Instalar dependencias
 composer install
 
+# Conexion entre el Storage y Public
+php artisan storage:link
+
+#Para error de Vite
+npm install
+
+npm run build
+
+
 # Generar clave de aplicación
 php artisan key:generate
 
