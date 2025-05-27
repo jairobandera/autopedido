@@ -60,6 +60,14 @@
     {{-- 4. Tabla del Carrito --}}
     <h5>Carrito</h5>
     <div class="table-responsive mb-3">
+        {{-- Metodo Pago --}}
+        <div class="d-flex justify-content-end align-items-center mb-3">
+            <label for="metodo-pago-global" class="me-2 mb-0">Método de Pago:</label>
+            <select id="metodo-pago-global" class="form-select w-auto">
+                <option value="Efectivo" selected>Efectivo</option>
+                <option value="MercadoPago">MercadoPago</option>
+            </select>
+        </div>
         <table class="table table-sm" id="tabla-carrito">
             <thead>
                 <tr>
@@ -78,6 +86,70 @@
     <button id="btn-finalizar" class="btn btn-success" disabled>Entregar Pedido</button>
 @endsection
 
+<!-- Modal Pedido Creado -->
+<div class="modal fade" id="modalPedidoCreado" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pedido Creado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Código de pedido: <strong id="modal-codigo-nuevo"></strong></p>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-imprimir-comprobante" class="btn btn-secondary">
+                    Imprimir Comprobante
+                </button>
+                <button id="btn-entregar-pedido" class="btn btn-success">
+                    Entregar Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal: MercadoPago --}}
+<div class="modal fade" id="modalMercadoPago" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pago con MercadoPago</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formMp">
+                    <div class="mb-3">
+                        <label class="form-label">Número de tarjeta</label>
+                        <input id="mp-cardNumber" class="form-control" />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <label class="form-label">Mes (MM)</label>
+                            <input id="mp-expirationMonth" class="form-control" />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Año (YY)</label>
+                            <input id="mp-expirationYear" class="form-control" />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">CVV</label>
+                            <input id="mp-securityCode" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Titular de la tarjeta</label>
+                        <input id="mp-cardholderName" class="form-control" />
+                    </div>
+                    <button id="btn-mp-pagar" type="submit" class="btn btn-primary w-100">
+                        Pagar con MercadoPago
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -95,23 +167,23 @@
                         let html = '<table class="table"><thead><tr><th>Imagen</th><th>Nombre</th><th>Precio</th><th></th></tr></thead><tbody>';
                         data.data.forEach(p => {
                             html += `<tr>
-                                        <td><img src="${p.imagen}" style="height:40px"></td>
-                                        <td>${p.nombre}</td>
-                                        <td>$${parseFloat(p.precio).toFixed(2)}</td>
-                                        <td>
-                                          <button class="btn btn-sm btn-primary btn-seleccionar" data-id="${p.id}">
-                                            Seleccionar
-                                          </button>
-                                        </td>
-                                    </tr>`;
+                                                                <td><img src="${p.imagen}" style="height:40px"></td>
+                                                                <td>${p.nombre}</td>
+                                                                <td>$${parseFloat(p.precio).toFixed(2)}</td>
+                                                                <td>
+                                                                  <button class="btn btn-sm btn-primary btn-seleccionar" data-id="${p.id}">
+                                                                    Seleccionar
+                                                                  </button>
+                                                                </td>
+                                                            </tr>`;
                         });
                         html += '</tbody></table>';
                         // paginación centrada
                         html += `
-                                    <div class="d-flex justify-content-center my-2">
-                                      <nav>${data.links}</nav>
-                                    </div>
-                                `;
+                                                            <div class="d-flex justify-content-center my-2">
+                                                              <nav>${data.links}</nav>
+                                                            </div>
+                                                        `;
                         document.getElementById('listado-productos').innerHTML = html;
                     });
             }
@@ -152,14 +224,14 @@
                             cont.innerHTML = '<label>Quitar ingredientes:</label>';
                             p.ingredientes.forEach(ing => {
                                 cont.innerHTML += `
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox"
-                                                value="${ing.id}" id="ing-${ing.id}"
-                                                ${ing.es_obligatorio ? 'disabled checked' : ''}>
-                                            <label class="form-check-label" for="ing-${ing.id}">
-                                            ${ing.nombre} ${ing.es_obligatorio ? '(obligatorio)' : ''}
-                                            </label>
-                                        </div>`;
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox"
+                                                                        value="${ing.id}" id="ing-${ing.id}"
+                                                                        ${ing.es_obligatorio ? 'disabled checked' : ''}>
+                                                                    <label class="form-check-label" for="ing-${ing.id}">
+                                                                    ${ing.nombre} ${ing.es_obligatorio ? '(obligatorio)' : ''}
+                                                                    </label>
+                                                                </div>`;
                             });
                             // guardar datos en botón
                             const btnAdd = document.getElementById('d-agregar');
@@ -206,18 +278,18 @@
                 carrito.forEach((item, idx) => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                                    <td>${item.nombre}</td>
-                                    <td>${item.quitados.length
+                                                            <td>${item.nombre}</td>
+                                                            <td>${item.quitados.length
                             ? item.quitados.map(q => q.nombre).join(', ')
                             : '<em>ninguno</em>'}</td>
-                                    <td>${item.cantidad}</td>
-                                    <td>$${item.subtotal.toFixed(2)}</td>
-                                    <td>
-                                      <button class="btn btn-sm btn-danger btn-eliminar" data-index="${idx}">
-                                        &times;
-                                      </button>
-                                    </td>
-                                `;
+                                                            <td>${item.cantidad}</td>
+                                                            <td>$${item.subtotal.toFixed(2)}</td>
+                                                            <td>
+                                                              <button class="btn btn-sm btn-danger btn-eliminar" data-index="${idx}">
+                                                                &times;
+                                                              </button>
+                                                            </td>
+                                                        `;
                     tbody.appendChild(tr);
                 });
                 document.getElementById('btn-finalizar').disabled = carrito.length === 0;
@@ -234,6 +306,7 @@
 
             // 6) Finalizar Pedido
             document.getElementById('btn-finalizar').onclick = () => {
+                const metodo = document.getElementById('metodo-pago-global').value;
                 const payload = {
                     items: carrito.map(item => ({
                         id: item.id,
@@ -241,7 +314,7 @@
                         // enviamos sólo los IDs de quitados, no los nombres
                         quitados: item.quitados.map(q => q.id),
                     })),
-                    metodo_pago: 'Efectivo'  // o el que hayas seleccionado
+                    metodo_pago: metodo  // o el que hayas seleccionado
                 };
                 fetch('{{ route("caja.pedidos.store") }}', {
                     method: 'POST',
@@ -249,15 +322,32 @@
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
-                     body: JSON.stringify(payload)
+                    body: JSON.stringify(payload)
                 })
                     .then(r => r.json())
-                    .then(() => location.href = '{{ route("Caja.dashboard") }}');
+                    .then(json => {
+                        // Mostramos modal
+                        document.getElementById('modal-codigo-nuevo').textContent = json.codigo;
+                        const modalEl = document.getElementById('modalPedidoCreado');
+                        modalEl.dataset.id = json.pedido_id;
+                        new bootstrap.Modal(modalEl).show();
+                    });
             };
 
             // al abrir el modal de productos, carga la página 1
             document.getElementById('modalProductos')
                 .addEventListener('shown.bs.modal', loadProductos);
         });
+
+        // Botón "Imprimir Comprobante"
+        document.getElementById('btn-imprimir-comprobante').onclick = () => {
+            const id = document.getElementById('modalPedidoCreado').dataset.id;
+            window.open(`/caja/pedidos/${id}/comprobante`, '_blank');
+        };
+
+        // Botón "Entregar Pedido"
+        document.getElementById('btn-entregar-pedido').onclick = () => {
+            location.href = '{{ route("Caja.dashboard") }}';
+        };
     </script>
 @endsection

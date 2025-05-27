@@ -34,5 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'mercadopago' => [
+        'key' => env('TEST-082ccbc4-bf32-47ac-8724-57f32ea5de3c'),
+        'token' => env('TEST-2226276028029286-052619-2f2dc254b7fcb6251e127a6e762a8664-84286365'),
+    ],
 
 ];

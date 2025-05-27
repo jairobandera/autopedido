@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MercadoPagoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\UsuarioController;
@@ -111,6 +112,11 @@ Route::middleware('auth')->group(function () {
         // Marca un pedido como 'Entregado' o el estado que necesites
         Route::patch('/caja/pedidos/{id}/estado', [PedidoController::class, 'cambiarEstado'])
             ->name('caja.pedidos.estado');
+        Route::patch('/caja/pagos/{pago}/estado', [PedidoController::class, 'cambiarPagoEstado'])
+            ->name('caja.pagos.estado');
+        Route::get('/caja/pedidos/{pedido}/comprobante', [PedidoController::class, 'comprobante'])
+            ->name('caja.pedidos.comprobante');
+
 
         Route::resource('caja/pedidos', PedidoController::class, ['as' => 'caja']);
 
@@ -124,4 +130,7 @@ Route::middleware('auth')->group(function () {
 
     // 🔹 Rutas de logout
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+
 });
+

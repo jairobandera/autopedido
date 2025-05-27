@@ -19,13 +19,15 @@ class PedidoController extends Controller
     public function index(Request $request)
     {
         $search = $request->query('search');
+        // Fecha de hoy en Montevideo
+        $today = Carbon::now('America/Montevideo')->toDateString();
 
         $query = Pedido::with(['usuario', 'pago'])
-            ->where('estado', '!=', 'Entregado');
+            ->where('estado', '!=', 'Entregado')
+            ->whereDate('created_at', $today);  // <— sólo hoy
 
-        // Si viene algo en search y es un dígito, filtramos por ID
-        if ($search !== null && ctype_digit($search)) {
-            $query->where('id', (int) $search);
+        if (!empty($search)) {
+            $query->where('codigo', 'like', "%{$search}%");
         }
 
         $pedidos = $query
@@ -120,6 +122,7 @@ class PedidoController extends Controller
         return response()->json([
             'success' => true,
             'pedido_id' => $pedido->id,
+            'codigo' => $pedido->codigo,
         ]);
     }
 
@@ -295,5 +298,30 @@ class PedidoController extends Controller
             'created_at' => $ultimo->created_at->toIso8601String(),
         ]);
     }
+
+    /**
+     * Cambia el estado de un pago.
+     */
+    public function cambiarPagoEstado(Request $request, Pago $pago)
+    {
+        $data = $request->validate([
+            'estado' => 'required|in:Completado,Pendiente,Fallido'
+        ]);
+
+        $pago->estado = $data['estado'];
+        $pago->save();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Muestra el comprobante printable con código de barras.
+     */
+    public function comprobante(Pedido $pedido)
+    {
+        return view('Caja.comprobante', compact('pedido'));
+    }
+
+
 
 }
