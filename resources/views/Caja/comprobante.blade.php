@@ -4,13 +4,27 @@
     <!-- Estilos para tickets de 80mm -->
     <style>
         @media print {
-            @page {
-                size: 80mm auto;
-                margin: 5mm;
+
+            /* Sólo mostramos el #ticket */
+            body * {
+                visibility: hidden;
             }
 
-            body {
-                width: 80mm;
+            #ticket,
+            #ticket * {
+                visibility: visible;
+            }
+
+            #ticket {
+                position: absolute;
+                top: 0;
+                left: 0;
+                text-align: center;
+            }
+
+            @page {
+                size: 76mm auto;
+                margin: 0;
             }
 
             #btn-imprimir-comprobante,
@@ -20,7 +34,10 @@
         }
     </style>
 
-    <div class="container text-center my-5">
+    <div class="container text-center my-5" id="ticket">
+        {{-- Logo centrado --}}
+        <img src="{{ asset('images/logo.png') }}" alt="Logo" style="max-width: 60mm; margin: 0 auto 10px; display: block;">
+        
         <h3>Comprobante de Pedido</h3>
         <p>Código: <strong>{{ $pedido->codigo }}</strong></p>
         <!-- Aquí se generará el barcode -->
