@@ -11,12 +11,16 @@ class UsuarioSeeder extends Seeder
     /**
      * Run the database seeds.
      */
-    public function run()
+    public function run(): void
     {
         $usuarios = [
-            ['nombre' => 'juan.perez', 'contrasena' => bcrypt('123456789'), 'rol' => 'Cliente', 'activo' => true],
-            ['nombre' => 'maria.rodriguez', 'contrasena' => bcrypt('123456789'), 'rol' => 'Cajero', 'activo' => true],
-            ['nombre' => 'admin', 'contrasena' => bcrypt('123456789'), 'rol' => 'Administrador', 'activo' => true],
+            ['nombre' => 'Cliente1', 'contrasena' => bcrypt('123456789'), 'rol' => 'Cliente', 'activo' => true],
+            ['nombre' => 'Cliente2', 'contrasena' => bcrypt('123456789'), 'rol' => 'Cliente', 'activo' => true],
+            ['nombre' => 'Admin', 'contrasena' => bcrypt('123456789'), 'rol' => 'Administrador', 'activo' => true],
+            ['nombre' => 'Cajero1', 'contrasena' => bcrypt('123456789'), 'rol' => 'Cajero', 'activo' => true],
+            ['nombre' => 'Cajero2', 'contrasena' => bcrypt('123456789'), 'rol' => 'Cajero', 'activo' => true],
+            ['nombre' => 'Cocina1', 'contrasena' => bcrypt('123456789'), 'rol' => 'Cocina', 'activo' => true],
+            ['nombre' => 'Cocina2', 'contrasena' => bcrypt('123456789'), 'rol' => 'Cocina', 'activo' => true],
         ];
 
         foreach ($usuarios as $usuario) {

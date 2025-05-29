@@ -21,11 +21,13 @@
     <form method="GET" class="mb-3">
         <div class="input-group">
             <input
+            id="search-input"
             type="text"
             name="search"
             class="form-control"
-            placeholder="Buscar por ID o código"
+            placeholder="Buscar por código de pedido"
             value="{{ request('search') }}"
+            autofocus
             >
             <button type="submit" class="btn btn-outline-secondary">
             <i class="bi bi-search"></i> Buscar
@@ -77,13 +79,19 @@
                         </td>
                         <td>
                             @if($pedido->pago)
-                                @if($pedido->pago->estado === 'Completado')
-                                    <span class="badge bg-success">Completado</span>
-                                @elseif($pedido->pago->estado === 'Pendiente')
-                                    <span class="badge bg-warning">Pendiente</span>
-                                @elseif($pedido->pago->estado === 'Fallido')
-                                    <span class="badge bg-danger">Fallido</span>
-                                @endif
+                                <select
+                                    class="form-select form-select-sm pago-cambio text-white"
+                                    data-id="{{ $pedido->pago->id }}"
+                                    style="width: auto;"
+                                >
+                                    @foreach(['Completado','Pendiente','Fallido'] as $ep)
+                                        <option value="{{ $ep }}"
+                                            {{ $pedido->pago->estado === $ep ? 'selected' : '' }}
+                                        >
+                                            {{ $ep }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             @else
                                 <span class="text-muted">–</span>
                             @endif
@@ -147,6 +155,9 @@
                 </div>
                 <div class="modal-footer">
                     <button id="btn-editar-pedido" class="btn btn-primary">Editar Pedido</button>
+                     <button id="btn-imprimir-modal" class="btn btn-secondary me-auto">
+                        <i class="bi bi-printer"></i> Imprimir Comprobante
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
@@ -170,6 +181,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 : 'new Date(0)'
             !!};
             let userHasInteracted = false;
+
+             const searchInput = document.getElementById('search-input');
+
+            // 1) Siempre que llegue una tecla y el foco NO esté en el input,
+            //    lo ponemos ahí para que el scanner escriba en ese campo.
+            document.addEventListener('keydown', e => {
+                if (document.activeElement !== searchInput) {
+                searchInput.focus();
+                // (Opcional) mover el cursor al final:
+                const val = searchInput.value;
+                searchInput.value = '';
+                searchInput.value = val;
+                }
+            });
+
+            // 2) Tu listener existente para procesar Enter…
+            searchInput.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                e.preventDefault();
+                e.target.form.submit();
+                }
+            });
 
             // Consideramos interacción sólo al volver a la pestaña
             window.addEventListener('focus', () => {
@@ -234,6 +267,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             window.location.href = `${baseShowUrl}/${id}/edit`;
                         };
                         new bootstrap.Modal(document.getElementById('modalVerPedido')).show();
+                        // asignar el onclick al botón de imprimir
+                        document.getElementById('btn-imprimir-modal').onclick = () => {
+                            // abrimos el comprobante en una nueva pestaña
+                            window.open(`/caja/pedidos/${id}/comprobante`, '_blank');
+                        };
                     })
                     .catch(() => Swal.fire('Error', 'No pude cargar los detalles', 'error'));
                 });
@@ -348,5 +386,75 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
         });
+
+        // Cambio de estado de pago
+        document.querySelectorAll('.pago-cambio').forEach(sel => {
+            // setear color inicial
+            const colorMap = {
+                Completado: 'bg-success',
+                Pendiente: 'bg-warning',
+                Fallido:   'bg-danger'
+            };
+            sel.classList.add(colorMap[sel.value] || '');
+
+            sel.addEventListener('change', () => {
+                const nuevo = sel.value;
+                const pagoId = sel.dataset.id;
+                Swal.fire({
+                    title: `Marcar pago como "${nuevo}"?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí',
+                    cancelButtonText: 'No'
+                }).then(({ isConfirmed }) => {
+                    if (!isConfirmed) {
+                        // revertir al original (opción data-original)
+                        sel.value = sel.getAttribute('data-original');
+                        return;
+                    }
+                    fetch(`/caja/pagos/${pagoId}/estado`, {
+                        method: 'PATCH',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ estado: nuevo })
+                    })
+                    .then(r => r.ok ? r.json() : Promise.reject())
+                    .then(() => {
+                        // actualizar color
+                        sel.classList.remove(...Object.values(colorMap));
+                        sel.classList.add(colorMap[nuevo]);
+                        sel.setAttribute('data-original', nuevo);
+                        Swal.fire('Hecho', 'Estado de pago actualizado', 'success');
+                    })
+                    .catch(() => {
+                        sel.value = sel.getAttribute('data-original');
+                        Swal.fire('Error', 'No se pudo actualizar', 'error');
+                    });
+                });
+            });
+        });
+
+        {{-- Si vino un término de búsqueda y no hay pedidos, mostramos un error --}}
+        @if(request('search') && $pedidos->isEmpty())
+        <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'Pedido no encontrado',
+            text: `No se encontró ningún pedido con “{{ request('search') }}”`
+        }).then(() => {
+            // 1) Limpio la URL (quito ?search=...)
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+
+            // 2) Limpio el input de búsqueda
+            const input = document.getElementById('search-input');
+            if (input) input.value = '';
+        });
+        </script>
+        @endif
+
     </script>
 @endsection

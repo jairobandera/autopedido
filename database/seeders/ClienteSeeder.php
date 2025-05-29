@@ -10,11 +10,16 @@ class ClienteSeeder extends Seeder
 {
     public function run()
     {
-        $usuario = Usuario::where('rol', 'Cliente')->first();
-        if ($usuario) {
+        $clientes = Usuario::where('rol', 'Cliente')->get();
+
+        if ($clientes->isEmpty()) {
+            return;
+        }
+
+        foreach ($clientes as $usuario) {
             Cliente::create([
                 'usuario_id' => $usuario->id,
-                'puntos_totales' => rand(0, 200),
+                'puntos_totales' => rand(0, 500), // Puntos acumulados realistas
             ]);
         }
     }

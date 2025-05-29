@@ -11,26 +11,63 @@ class ProductoPromocionSeeder extends Seeder
 {
     public function run()
     {
-        $productos = Producto::all();
-        $promociones = Promocion::all();
+        $productos = Producto::all()->keyBy('nombre');
+        $promociones = Promocion::all()->keyBy('nombre');
 
-        // Si no hay productos o promociones, salimos sin hacer nada
-        if ($productos->isEmpty() || $promociones->isEmpty()) {
-            return;
-        }
+        $asignaciones = [
+            // Martes 2x1 en Pizzas
+            'Pizza Margherita' => ['Martes 2x1 en Pizzas'],
+            'Pizza Pepperoni' => ['Martes 2x1 en Pizzas'],
+            'Pizza Cuatro Quesos' => ['Martes 2x1 en Pizzas'],
 
-        foreach ($productos as $producto) {
-            // Asigna entre 1 y 3 promociones (como máximo las que existan)
-            $max = min(3, $promociones->count());
-            $seleccionadas = $promociones->random(rand(1, $max));
+            // Happy Hour Bebidas
+            'Coca-Cola 500ml' => ['Happy Hour Bebidas'],
+            'Café Latte' => ['Happy Hour Bebidas'],
+            'Jugo de Naranja' => ['Happy Hour Bebidas'],
+            'Cerveza Artesanal IPA' => ['Happy Hour Bebidas'],
 
-            foreach ($seleccionadas as $promo) {
-                DB::table('producto_promocion')->insert([
-                    'producto_id' => $producto->id,
-                    'promocion_id' => $promo->id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+            // Combo Familiar
+            'Big Gourmet' => ['Combo Familiar'],
+            'Bacon Cheese' => ['Combo Familiar'],
+            'Papas Fritas Clásicas' => ['Combo Familiar'],
+            'Coca-Cola 500ml' => ['Combo Familiar'],
+
+            // Lunes Saludable
+            'Veggie Burger' => ['Lunes Saludable'],
+            'Ensalada Mediterránea' => ['Lunes Saludable'],
+            'Ensalada de Pollo' => ['Lunes Saludable'],
+            'Bowl Vegano' => ['Lunes Saludable'],
+            'Jugo de Naranja' => ['Lunes Saludable'],
+
+            // Jueves de Empanadas
+            'Empanada de Carne' => ['Jueves de Empanadas'],
+            'Empanada de Jamón y Queso' => ['Jueves de Empanadas'],
+            'Empanada Caprese' => ['Jueves de Empanadas'],
+
+            // Fin de Semana Dulce
+            'Tiramisú' => ['Fin de Semana Dulce'],
+            'Flan Casero' => ['Fin de Semana Dulce'],
+            'Cheesecake de Frutos Rojos' => ['Fin de Semana Dulce'],
+
+            // Día del Niño
+            'Empanada de Jamón y Queso' => ['Día del Niño'],
+            'Papas Fritas Clásicas' => ['Día del Niño'],
+            'Jugo de Naranja' => ['Día del Niño'],
+        ];
+
+        foreach ($asignaciones as $productoNombre => $promocionesAsignadas) {
+            if (isset($productos[$productoNombre])) {
+                $producto = $productos[$productoNombre];
+                foreach ($promocionesAsignadas as $promocionNombre) {
+                    if (isset($promociones[$promocionNombre])) {
+                        DB::table('producto_promocion')->insert([
+                            'producto_id' => $producto->id,
+                            'promocion_id' => $promociones[$promocionNombre]->id,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
             }
         }
     }

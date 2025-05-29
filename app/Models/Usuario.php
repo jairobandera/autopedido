@@ -15,7 +15,13 @@ class Usuario extends Model
     }
 
     public function setContrasenaAttribute($value)
-    {
+{
+    // Solo hashear si no lo está ya
+    if (!Hash::needsRehash($value)) {
+        $this->attributes['contrasena'] = $value;
+    } else {
         $this->attributes['contrasena'] = Hash::make($value);
     }
+}
+
 }

@@ -8,10 +8,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Agregamos JsBarcode para generar códigos de barras -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         input[type="checkbox"].text-blue-600 {
             color: #2563eb !important;
         }
+
         input[type="checkbox"]:not([disabled]) {
             cursor: pointer !important;
         }
@@ -283,14 +286,35 @@
                             x-transition:leave-end="opacity-0 scale-95"
                             class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" @click.away="showResultadoModal = false">
                             <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
-                                <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center" x-text="resultadoPago.titulo"></h3>
-                                <p class="text-gray-600 text-center mb-2" x-text="resultadoPago.mensaje"></p>
-                                <p class="text-gray-600 text-center mb-6" x-show="resultadoPago.codigo" x-text="'Código de pedido: ' + resultadoPago.codigo"></p>
-                                <button @click="showResultadoModal = false"
-                                    class="w-full bg-orange-600 text-white py-3 px-4 rounded-lg hover:bg-orange-700 flex flex-col items-center justify-center transition transform hover:scale-105 active:scale-95">
-                                    <i class="fas fa-arrow-left text-2xl mb-2"></i>
-                                    <span>Volver</span>
-                                </button>
+                                <div id="ticket-content" class="text-center">
+                                    <div class="flex justify-center mb-4">
+                                        <img src="{{ asset('images/logo.png') }}" alt="Logo" class="h-16">
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-gray-800 mb-2" x-text="resultadoPago.titulo"></h3>
+                                    <p class="text-gray-600 mb-4" x-text="resultadoPago.mensaje"></p>
+
+                                    <div class="border-2 border-dashed border-gray-300 p-4 rounded-lg mb-4">
+                                        
+                                        <p class="text-lg font-semibold mb-2">Comprobante del Pedido</p>
+                                        <p class="text-gray-600 mb-1" x-text="'Código: ' + resultadoPago.codigo"></p>
+                                        <p class="text-gray-600 mb-3" x-text="'Fecha: ' + new Date().toLocaleString()"></p>
+
+                                        <svg id="barcode" class="w-full h-16 mb-3"></svg>
+
+                                        <p class="text-sm text-gray-500">Gracias por tu compra</p>
+                                    </div>
+
+                                    <div class="flex justify-center space-x-4 mt-6">
+                                        <button @click="imprimirTicket()"
+                                            class="bg-orange-600 text-white py-2 px-6 rounded-lg hover:bg-orange-700 transition transform hover:scale-105">
+                                            <i class="fas fa-print mr-2"></i>Imprimir Ticket
+                                        </button>
+                                        <button @click="showResultadoModal = false"
+                                            class="bg-gray-200 text-gray-800 py-2 px-6 rounded-lg hover:bg-gray-300 transition transform hover:scale-105">
+                                            <i class="fas fa-arrow-left mr-2"></i>Volver
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -311,22 +335,22 @@
     </footer>
 
     <script>
-        window._appData = {
-            productos: @json($productos),
-            categorias: @json($categorias),
-            items: @json($carrito),
-            orden: '{{ request('orden', 'nombre_asc') }}',
-            categoria_id: {{ request('categoria_id') ? request('categoria_id') : 'null' }},
-            csrf: '{{ csrf_token() }}',
-            rutas: {
-                dashboard: '{{ route('Cliente.dashboard') }}',
-                addToCart: '{{ route('Cliente.addToCart') }}',
-                updateCart: '{{ route('Cliente.updateCart') }}',
-                removeFromCart: '{{ route('Cliente.removeFromCart') }}',
-                procesarPago: '{{ route('Cliente.procesarPago') }}',
-            }
-        };
-    </script>
+    window._appData = {
+        productos: @json($productos),
+        categorias: @json($categorias),
+        items: @json($carrito),
+        orden: '{{ request("orden", "nombre_asc") }}',
+        categoria_id: {{ request('categoria_id') ? request('categoria_id') : 'null' }},
+        csrf: '{{ csrf_token() }}',
+        rutas: {
+            dashboard: '{{ route("Cliente.dashboard") }}',
+            addToCart: '{{ route("Cliente.addToCart") }}',
+            updateCart: '{{ route("Cliente.updateCart") }}',
+            removeFromCart: '{{ route("Cliente.removeFromCart") }}',
+            procesarPago: '{{ route("Cliente.procesarPago") }}',
+        }
+    };
+</script>
 
     <script>
         document.addEventListener('alpine:init', () => {
@@ -394,7 +418,10 @@
 
                         const quitados = this.ingredientesQuitados[productoId] || [];
 
-                        console.log('Añadiendo al carrito:', { productoId, quitados });
+                        console.log('Añadiendo al carrito:', {
+                            productoId,
+                            quitados
+                        });
 
                         const response = await fetch(window._appData.rutas.addToCart, {
                             method: 'POST',
@@ -515,14 +542,16 @@
                                 mensaje: 'Tu pedido ha sido procesado con éxito.',
                                 codigo: data.codigo
                             };
+                            this.showResultadoModal = true;
+                            this.generarCodigoBarras(data.codigo);
                         } else {
                             this.resultadoPago = {
                                 titulo: 'Error en el Pago',
                                 mensaje: data.message || 'Hubo un problema al procesar tu pago. Por favor, intenta de nuevo.',
                                 codigo: null
                             };
+                            this.showResultadoModal = true;
                         }
-                        this.showResultadoModal = true;
                     } catch (error) {
                         this.showModal = false;
                         this.resultadoPago = {
@@ -538,8 +567,64 @@
                     }
                 },
 
+                generarCodigoBarras(codigo) {
+                    if (!codigo) return;
+
+                    // Usamos setTimeout para asegurarnos que el SVG está en el DOM
+                    setTimeout(() => {
+                        try {
+                            JsBarcode("#barcode", codigo, {
+                                format: "CODE128",
+                                lineColor: "#000",
+                                width: 2,
+                                height: 50,
+                                displayValue: true,
+                                fontSize: 16,
+                                margin: 10
+                            });
+                        } catch (error) {
+                            console.error("Error generando código de barras:", error);
+                        }
+                    }, 100);
+                },
+
+                imprimirTicket() {
+                    const contenido = document.querySelector('.border-2.border-dashed.border-gray-300.p-4.rounded-lg.mb-4').outerHTML;
+                    const ventana = window.open('', '_blank');
+                    ventana.document.open();
+                    ventana.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>Ticket de Pedido</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+                                .ticket { width: 80mm; margin: 0 auto; text-align: center; }
+                                .info { margin: 10px 0; }
+                                .barcode { margin: 10px 0; }
+                                .footer { font-size: 12px; margin-top: 10px; }
+                                p { margin: 0; padding: 2px 0; }
+                                @media print {
+                                    body { width: 80mm; }
+                                }
+                            </style>
+                        </head>
+                        <body onload="window.print();">
+                            <div class="ticket">
+                                ${contenido}
+                            </div>
+                        </body>
+                        </html>
+                    `);
+                    ventana.document.close();
+                },
+
                 updateIngredientesQuitados(productoId, ingredienteId, isRemoved) {
-                    console.log('Evento updateIngredientesQuitados:', { productoId, ingredienteId, isRemoved });
+                    console.log('Evento updateIngredientesQuitados:', {
+                        productoId,
+                        ingredienteId,
+                        isRemoved
+                    });
                     productoId = Number(productoId);
                     ingredienteId = Number(ingredienteId);
                     if (!this.ingredientesQuitados[productoId]) {
@@ -574,4 +659,5 @@
         });
     </script>
 </body>
+
 </html>

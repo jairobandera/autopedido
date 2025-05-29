@@ -5,25 +5,35 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\DetallePedido;
 use App\Models\Ingrediente;
+use App\Models\Producto;
+use Illuminate\Support\Facades\DB;
 
 class DetallePedidoIngredienteQuitadoSeeder extends Seeder
 {
     public function run()
     {
-        // Obtiene todos los detalles y todos los ingredientes
         $detalles = DetallePedido::all();
-        $ingredientes = Ingrediente::all()->pluck('id')->toArray();
+        $productos = Producto::all()->keyBy('id');
+        $ingredientesProducto = DB::table('ingrediente_producto')
+            ->where('es_obligatorio', false)
+            ->get()
+            ->groupBy('producto_id');
 
         foreach ($detalles as $detalle) {
-            // Para cada detalle, elige al azar hasta 2 ingredientes distintos a quitar
-            $quitados = collect($ingredientes)
-                ->shuffle()
-                ->take(rand(0, 2))
-                ->toArray();
+            if (isset($productos[$detalle->producto_id]) && isset($ingredientesProducto[$detalle->producto_id])) {
+                $ingredientesDisponibles = $ingredientesProducto[$detalle->producto_id]
+                    ->pluck('ingrediente_id')
+                    ->toArray();
 
-            if (count($quitados)) {
-                // Adjunta los quitados
-                $detalle->ingredientesQuitados()->attach($quitados);
+                // Elegir hasta 2 ingredientes no obligatorios para quitar
+                $quitados = collect($ingredientesDisponibles)
+                    ->shuffle()
+                    ->take(rand(0, 2))
+                    ->toArray();
+
+                if (!empty($quitados)) {
+                    $detalle->ingredientesQuitados()->attach($quitados);
+                }
             }
         }
     }
