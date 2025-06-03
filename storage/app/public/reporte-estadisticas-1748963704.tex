@@ -1,0 +1,160 @@
+```latex
+\documentclass[a4paper,11pt]{article}
+
+% Including necessary packages for formatting
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{amsmath}
+\usepackage{parskip}
+
+% Setting page geometry
+\geometry{margin=2.5cm}
+
+% Configuring header and footer
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Eatsy - Reporte de Estadísticas}
+\rhead{\today}
+\cfoot{Página \thepage\ de \pageref{LastPage}}
+
+% Defining title and author
+\title{Reporte de Estadísticas de Ventas \\ Eatsy}
+\author{Administración}
+\date{\today}
+
+% Setting font to Noto Serif
+\usepackage{noto}
+
+\begin{document}
+
+% Generating title page
+\maketitle
+\vspace{1cm}
+\begin{center}
+    \textbf{Período: 01/06/2025 al 30/06/2025}
+\end{center}
+\vspace{2cm}
+
+% Adding table of contents
+\tableofcontents
+\newpage
+
+% Introducing the report
+\section{Introducción}
+Este documento presenta un análisis detallado de las estadísticas de ventas y pedidos de Eatsy correspondientes al período del 01/06/2025 al 30/06/2025. El reporte incluye información sobre ventas diarias, productos más vendidos, ventas por categoría, distribución de pedidos por estado, e ingresos por hora. Los datos han sido recopilados y procesados para proporcionar una visión clara y precisa del desempeño del negocio.
+
+% Presenting daily sales data
+\section{Ventas Diarias}
+La siguiente tabla detalla las ventas diarias registradas durante el período analizado. Los montos están expresados en dólares estadounidenses (USD).
+
+\begin{longtable}{lc}
+    \toprule
+    \textbf{Fecha} & \textbf{Total Ventas (USD)} \\
+    \midrule
+            2025-06-01 & 51.470,00 \\
+        \bottomrule
+    \caption{Ventas diarias del período 01/06/2025 al 30/06/2025.}
+    \label{tab:ventas_diarias}
+\end{longtable}
+
+% Presenting top-selling products
+\section{Productos Más Vendidos}
+A continuación, se presentan los cinco productos más vendidos durante el período, ordenados por la cantidad total de unidades vendidas.
+
+\begin{longtable}{lc}
+    \toprule
+    \textbf{Producto} & \textbf{Unidades Vendidas} \\
+    \midrule
+            Pizza Pepperoni & 27 \\
+            Cerveza Artesanal IPA & 13 \\
+            Tiramisú & 13 \\
+            Milanesa Napolitana & 13 \\
+            Ensalada Mediterránea & 12 \\
+        \bottomrule
+    \caption{Productos más vendidos del período 01/06/2025 al 30/06/2025.}
+    \label{tab:mas_vendidos}
+\end{longtable}
+
+% Presenting sales by category
+\section{Ventas por Categoría}
+La siguiente tabla muestra la distribución de las ventas por categoría de productos, según las unidades vendidas.
+
+\begin{longtable}{lc}
+    \toprule
+    \textbf{Categoría} & \textbf{Unidades Vendidas} \\
+    \midrule
+            Pizzas & 43 \\
+            Opciones Vegetarianas & 38 \\
+            Postres & 35 \\
+            Bebidas & 30 \\
+            Ensaladas & 23 \\
+            Empanadas & 19 \\
+            Desayunos & 15 \\
+            Hamburguesas & 15 \\
+            Bebidas Alcohólicas & 13 \\
+            Platos Fuertes & 13 \\
+            Opciones Veganas & 8 \\
+            Cafetería & 5 \\
+            Snacks & 1 \\
+            Entradas & 1 \\
+        \bottomrule
+    \caption{Ventas por categoría del período 01/06/2025 al 30/06/2025.}
+    \label{tab:ventas_por_categoria}
+\end{longtable}
+
+% Presenting orders by status
+\section{Pedidos por Estado}
+Esta sección detalla la cantidad de pedidos clasificados por su estado durante el período analizado.
+
+\begin{longtable}{lc}
+    \toprule
+    \textbf{Estado} & \textbf{Cantidad de Pedidos} \\
+    \midrule
+            Recibido & 1 \\
+            Cancelado & 12 \\
+            Entregado & 15 \\
+            Listo & 5 \\
+        \bottomrule
+    \caption{Pedidos por estado del período 01/06/2025 al 30/06/2025.}
+    \label{tab:pedidos_por_estado}
+\end{longtable}
+
+% Presenting hourly income
+\section{Ingresos por Hora}
+La siguiente tabla presenta los ingresos generados por hora del día, agrupados en intervalos de una hora.
+
+\begin{longtable}{lc}
+    \toprule
+    \textbf{Hora} & \textbf{Total Ingresos (USD)} \\
+    \midrule
+            06:00-07:00 & 3.710,00 \\
+            07:00-08:00 & 2.600,00 \\
+            11:00-12:00 & 1.300,00 \\
+            12:00-13:00 & 6.580,00 \\
+            14:00-15:00 & 3.640,00 \\
+            15:00-16:00 & 2.560,00 \\
+            16:00-17:00 & 1.200,00 \\
+            17:00-18:00 & 4.300,00 \\
+            18:00-19:00 & 4.050,00 \\
+            19:00-20:00 & 5.900,00 \\
+            20:00-21:00 & 4.430,00 \\
+            21:00-22:00 & 5.300,00 \\
+            23:00-24:00 & 5.900,00 \\
+        \bottomrule
+    \caption{Ingresos por hora del período 01/06/2025 al 30/06/2025.}
+    \label{tab:ingresos_por_hora}
+\end{longtable}
+
+% Concluding the report
+\section{Conclusión}
+Este reporte proporciona una visión integral del desempeño comercial de Eatsy durante el período del 01/06/2025 al 30/06/2025. Los datos presentados pueden ser utilizados para identificar tendencias, optimizar la oferta de productos y mejorar la gestión de pedidos. Para mayor detalle, se recomienda consultar los registros originales en el sistema.
+
+\end{document}
+```

@@ -73,14 +73,15 @@
                 </div>
             </div>
 
-            {{-- Gráficas --}}
+            {{-- Estadísticas --}}
             <div class="col-md-4 col-lg-3">
                 <div class="card border-0 shadow h-100 hover-scale rounded-4">
                     <img src="https://cdn-icons-png.flaticon.com/512/8947/8947571.png" class="card-img-top p-4"
-                        alt="Gráficas">
+                        alt="Estadísticas">
                     <div class="card-body text-center">
-                        <h5 class="card-title fw-semibold">Gráficas</h5>
-                        <button class="btn btn-outline-secondary rounded-pill px-4" disabled>Ver estadísticas</button>
+                        <h5 class="card-title fw-semibold">Estadísticas</h5>
+                        <a href="{{ route('estadisticas.index') }}"
+                           class="btn btn-outline-secondary rounded-pill px-4">Ver estadísticas</a>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\MercadoPagoController;
+use App\Http\Controllers\EstadisticasController;
 use App\Http\Controllers\CocinaController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoriaController;
@@ -90,8 +91,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/administrador/promociones/{promo}/productos', [PromocionController::class, 'productos'])
             ->name('promociones.productos');
 
-        // Resource de PROMOCIONES
+        // 🔹 Resource de PROMOCIONES
         Route::resource('/administrador/promociones', PromocionController::class);
+
+        // 🔹 Resource de GRAFICOS
+        Route::get('/administrador/estadisticas', [EstadisticasController::class, 'index'])->name('estadisticas.index');
+        Route::get('/estadisticas/export-pdf', [EstadisticasController::class, 'exportPdf'])->name('estadisticas.export-pdf');
     });
 
     // 🔹 Rutas protegidas para cajeros (verificar rol)
