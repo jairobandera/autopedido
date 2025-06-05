@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cliente;
 use App\Models\Producto;
 use App\Models\Categoria;
 use App\Models\Pedido;
@@ -251,5 +252,22 @@ class ClienteController extends Controller
             'message' => 'Pedido creado exitosamente.',
             'codigo' => $codigo,
         ]);
+    }
+
+    public function search(Request $request)
+    {
+        $q = $request->query('cedula', '');
+
+        // Validamos mínimo 3 caracteres, por ejemplo:
+        if (strlen($q) < 3) {
+            return response()->json([], 200);
+        }
+
+        // Buscamos coincidencias (puede ser “like” para búsqueda parcial)
+        $clientes = Cliente::where('cedula', 'like', "%{$q}%")
+            ->take(10)
+            ->get(['id', 'nombre', 'apellido', 'cedula', 'telefono', 'puntos', 'activo']);
+
+        return response()->json($clientes);
     }
 }

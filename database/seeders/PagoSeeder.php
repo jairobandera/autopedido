@@ -29,7 +29,7 @@ class PagoSeeder extends Seeder
 
             Pago::create([
                 'pedido_id' => $pedido->id,
-                'tipo' => $pedido->metodo_pago, // Efectivo o MercadoPago
+                'tipo' => $pedido->metodo_pago, // Efectivo o Tarjeta
                 'monto' => $pedido->total,
                 'fecha' => $pedido->created_at, // Coincide con la fecha del pedido
                 'estado' => $estadoPago,

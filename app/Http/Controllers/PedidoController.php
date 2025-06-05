@@ -6,8 +6,11 @@ use App\Models\Pedido;
 use App\Models\DetallePedido;
 use App\Models\Producto;
 use App\Models\Pago;
+use App\Models\Cliente;
+use App\Models\PuntoPedido;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
@@ -24,7 +27,7 @@ class PedidoController extends Controller
 
         $query = Pedido::with(['usuario', 'pago'])
             ->where('estado', '!=', 'Entregado')
-            ->whereDate('created_at', $today);  // <— sólo hoy
+            ->whereDate('created_at', $today);  // sólo hoy
 
         if (!empty($search)) {
             $query->where('codigo', 'like', "%{$search}%");
@@ -35,7 +38,7 @@ class PedidoController extends Controller
             ->paginate(5)
             ->withQueryString(); // mantiene "search" en la query
 
-        // Agregá esto:
+        // Para el dashboard en tiempo real
         $ultimo = Pedido::orderBy('id', 'desc')->first();
         $lastCreatedAt = $ultimo
             ? $ultimo->created_at->toIso8601String()
@@ -57,83 +60,109 @@ class PedidoController extends Controller
 
     /**
      * Store a newly created resource in storage.
-     * Recibe JSON: { items: [{id, cantidad}], metodo_pago }
+     * Recibe JSON: { cliente_id?, items: [{ id, cantidad, quitados }], metodo_pago }
      */
     public function store(Request $request)
     {
         $data = $request->validate([
+            'cliente_id' => 'nullable|exists:clientes,id',
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:productos,id',
             'items.*.cantidad' => 'required|integer|min:1',
             'items.*.quitados' => 'array',
             'items.*.quitados.*' => 'integer|exists:ingredientes,id',
-            'metodo_pago' => 'required|in:Efectivo,MercadoPago',
+            'metodo_pago' => 'required|in:Efectivo,Tarjeta',
         ]);
 
-        do {
-            $code = 'PED-' . strtoupper(Str::random(4));
-        } while (Pedido::where('codigo', $code)->exists());
+        DB::beginTransaction();
+        try {
+            // 1) Generar código único PED-XXXX
+            do {
+                $code = 'PED-' . strtoupper(Str::random(4));
+            } while (Pedido::where('codigo', $code)->exists());
 
-
-        // 1) Creamos el pedido en estado 'Recibido'
-        $pedido = Pedido::create([
-            'usuario_id' => Auth::id(),
-            'total' => 0,  // lo calculamos abajo
-            'metodo_pago' => $data['metodo_pago'],
-            'estado' => 'Recibido',
-            'codigo' => $code,
-        ]);
-
-        // 2) Creamos los detalles y sumamos el total
-        $total = 0;
-        foreach ($data['items'] as $item) {
-            $producto = Producto::findOrFail($item['id']);
-            $subtotal = $producto->precio * $item['cantidad'];
-
-            $detalle = DetallePedido::create([
-                'pedido_id' => $pedido->id,
-                'producto_id' => $producto->id,
-                'fecha_hora' => now(),
-                'cantidad' => $item['cantidad'],
-                'subtotal' => $subtotal,
+            // 2) Crear el pedido en estado 'Recibido'
+            $pedido = Pedido::create([
+                'usuario_id' => Auth::id(),
+                'total' => 0,  // se actualiza luego
+                'metodo_pago' => $data['metodo_pago'],
+                'estado' => 'Recibido',
+                'codigo' => $code,
             ]);
 
-            $total += $subtotal;
-            if (!empty($item['quitados'])) {
-                $detalle->ingredientesQuitados()->attach($item['quitados']);
+            // 3) Crear los detalles y acumular total
+            $total = 0;
+            foreach ($data['items'] as $item) {
+                $producto = Producto::findOrFail($item['id']);
+                $subtotal = $producto->precio * $item['cantidad'];
+
+                $detalle = DetallePedido::create([
+                    'pedido_id' => $pedido->id,
+                    'producto_id' => $producto->id,
+                    'fecha_hora' => now(),
+                    'cantidad' => $item['cantidad'],
+                    'subtotal' => $subtotal,
+                ]);
+
+                $total += $subtotal;
+
+                if (!empty($item['quitados'])) {
+                    $detalle->ingredientesQuitados()->attach($item['quitados']);
+                }
+            }
+            // Actualizamos el total en el pedido
+            $pedido->update(['total' => $total]);
+
+            // 4) Crear el pago asociado
+            Pago::create([
+                'pedido_id' => $pedido->id,
+                'tipo' => $data['metodo_pago'],
+                'monto' => $total,
+                'fecha' => now(),
+                'estado' => $data['metodo_pago'] === 'Efectivo' ? 'Pendiente' : 'Pendiente',
+            ]);
+
+            // 5) Si se recibió cliente_id, crear registro en punto_pedido
+            if (!empty($data['cliente_id'])) {
+                // Lógica de puntos: 1 punto cada $10 de total, mínimo 10, máximo 100
+                $puntos = floor($total / 10);
+                $puntos = max(10, min($puntos, 100));
+                \Log::debug('DEBUG en store(): puntos generados = ' . $puntos . ' para cliente_id=' . $data['cliente_id'] . ' y pedido_id=' . $pedido->id);
+
+                PuntoPedido::create([
+                    'cliente_id' => $data['cliente_id'],
+                    'pedido_id' => $pedido->id,
+                    'cantidad' => $puntos,
+                    'tipo' => 'Canjeo', // o 'Redencion' si corresponde
+                    'fecha' => now(),
+                ]);
+
+                // (Opcional) Actualizar total de puntos en la tabla clientes
+                $cliente = Cliente::find($data['cliente_id']);
+                if ($cliente) {
+                    $cliente->puntos += $puntos;
+                    $cliente->save();
+                }
             }
 
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'pedido_id' => $pedido->id,
+                'codigo' => $pedido->codigo,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
         }
-        $pedido->update(['total' => $total]);
-
-        //$pedido->total = $total;
-        //$pedido->save();
-
-        // 3) Creamos el pago asociado
-        Pago::create([
-            'pedido_id' => $pedido->id,
-            'tipo' => $data['metodo_pago'],
-            'monto' => $total,
-            'fecha' => now(),
-            'estado' => $data['metodo_pago'] === 'Efectivo' ? 'Completado' : 'Pendiente',
-        ]);
-
-        // 4) Devolvemos JSON para tu JS
-        return response()->json([
-            'success' => true,
-            'pedido_id' => $pedido->id,
-            'codigo' => $pedido->codigo,
-        ]);
     }
 
-    // en app/Models/Pedido.php
-    public function pago()
-    {
-        return $this->hasOne(Pago::class, 'pedido_id');
-    }
     public function show($id)
     {
-        // Carga el pedido + detalles + producto dentro de cada detalle
         $pedido = Pedido::with('detalles.producto')->findOrFail($id);
 
         return response()->json([
@@ -150,7 +179,6 @@ class PedidoController extends Controller
 
     public function cambiarEstado(Request $request, $id)
     {
-        // Valida que venga un estado permitido
         $data = $request->validate([
             'estado' => 'required|in:Cancelado,Recibido,En Preparacion,Listo,Entregado'
         ]);
@@ -167,7 +195,6 @@ class PedidoController extends Controller
 
     public function entregados()
     {
-        // Sólo los entregados hoy
         $pedidos = Pedido::with('usuario', 'pago')
             ->where('estado', 'Entregado')
             ->whereDate('updated_at', Carbon::today())
@@ -178,22 +205,19 @@ class PedidoController extends Controller
 
     public function buscarProductos(Request $request)
     {
-        // Toma el parámetro de búsqueda (q) y la página
         $q = $request->query('q', '');
         $productos = Producto::where('activo', 1)
             ->when($q, fn($query) => $query->where('nombre', 'like', "%{$q}%"))
             ->paginate(5)
             ->withQueryString();
 
-        // Si es petición AJAX JSON, devolvemos data + links HTML
         if ($request->wantsJson()) {
             return response()->json([
                 'data' => $productos->items(),
-                'links' => $productos->links()->render()
+                'links' => $productos->links()->render(),
             ]);
         }
 
-        // En caso contrario, podrías devolver una vista (no necesario aquí)
         return view('Caja.create', compact('productos'));
     }
 
@@ -201,7 +225,6 @@ class PedidoController extends Controller
     {
         $producto = Producto::with(['ingredientes'])->findOrFail($id);
 
-        // Formatea la respuesta JSON con id, nombre, precio, imagen y lista de ingredientes
         return response()->json([
             'id' => $producto->id,
             'nombre' => $producto->nombre,
@@ -221,28 +244,37 @@ class PedidoController extends Controller
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:productos,id',
             'items.*.cantidad' => 'required|integer|min:1',
-            'metodo_pago' => 'required|in:Efectivo,MercadoPago',
+            'items.*.quitados' => 'nullable|array',
+            'items.*.quitados.*' => 'integer|exists:ingredientes,id',
+            'metodo_pago' => 'required|in:Efectivo,Tarjeta',
         ]);
 
         $pedido = Pedido::findOrFail($id);
-        // 1) Borrar detalles antiguos
         $pedido->detalles()->delete();
 
-        // 2) Recalcular total
         $total = 0;
         foreach ($data['items'] as $item) {
             $producto = Producto::findOrFail($item['id']);
             $subtotal = $producto->precio * $item['cantidad'];
-            $pedido->detalles()->create([
+
+            // Creamos un nuevo DetallePedido
+            $detalle = DetallePedido::create([
+                'pedido_id' => $pedido->id,
                 'producto_id' => $producto->id,
                 'fecha_hora' => now(),
                 'cantidad' => $item['cantidad'],
-                'subtotal' => $subtotal
+                'subtotal' => $subtotal,
             ]);
+
             $total += $subtotal;
+
+            // ADJUNTAR los ingredientes quitados sobre el $detalle, NO sobre $pedido
+            if (!empty($item['quitados'])) {
+                // Asegúrate de que DetallePedido tenga la relación ingredientesQuitados()
+                $detalle->ingredientesQuitados()->attach($item['quitados']);
+            }
         }
 
-        // 3) Actualizar pedido y pago
         $pedido->update([
             'total' => $total,
             'metodo_pago' => $data['metodo_pago']
@@ -250,7 +282,7 @@ class PedidoController extends Controller
         $pedido->pago()->update([
             'monto' => $total,
             'tipo' => $data['metodo_pago'],
-            'estado' => $data['metodo_pago'] === 'Efectivo' ? 'Completado' : 'Pendiente',
+            //'estado' => $data['metodo_pago'] === 'Efectivo' ? 'Completado' : 'Pendiente',
         ]);
 
         return response()->json(['success' => true]);
@@ -260,7 +292,6 @@ class PedidoController extends Controller
     {
         $pedido = Pedido::with('detalles.producto')->findOrFail($id);
 
-        // Preparamos el array “detalles” para JS:
         $detalles = $pedido->detalles->map(function ($d) {
             return [
                 'id' => $d->producto->id,
@@ -284,7 +315,6 @@ class PedidoController extends Controller
     {
         $ultimo = Pedido::orderBy('id', 'desc')->first();
 
-        // Si no hay pedidos, devolvemos nulls
         if (!$ultimo) {
             return response()->json([
                 'id' => 0,
@@ -294,7 +324,6 @@ class PedidoController extends Controller
 
         return response()->json([
             'id' => $ultimo->id,
-            // ISO 8601, en UTC (o tu zona)
             'created_at' => $ultimo->created_at->toIso8601String(),
         ]);
     }
@@ -319,9 +348,27 @@ class PedidoController extends Controller
      */
     public function comprobante(Pedido $pedido)
     {
+        // Cargamos el pedido junto con su PuntoPedido y el Cliente asociado:
+        $pedido = Pedido::with([
+            'puntoPedido.cliente'
+        ])->findOrFail($pedido->id);
+
+        \Log::debug('DEBUG en comprobante():');
+        \Log::debug('  pedido->id = ' . $pedido->id);
+        \Log::debug('  existe puntoPedido? ' . ($pedido->puntoPedido ? 'sí' : 'no'));
+        if ($pedido->puntoPedido) {
+            \Log::debug('  puntoPedido->cantidad = ' . $pedido->puntoPedido->cantidad);
+            \Log::debug('  cliente asociado? ' . ($pedido->puntoPedido->cliente ? 'sí' : 'no'));
+            if ($pedido->puntoPedido->cliente) {
+                \Log::debug('    cliente->id = ' . $pedido->puntoPedido->cliente->id);
+                \Log::debug('    cliente->puntos = ' . $pedido->puntoPedido->cliente->puntos);
+            }
+        }
+
+
+        // Ahora, $pedido->puntoPedido puede ser null si no se asoció cliente.
+        // Si existe, $pedido->puntoPedido->cliente es el modelo Cliente.
+
         return view('Caja.comprobante', compact('pedido'));
     }
-
-
-
 }

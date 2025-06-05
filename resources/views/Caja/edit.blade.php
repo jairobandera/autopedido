@@ -39,8 +39,8 @@
                     <option value="Efectivo" {{ $pedido->metodo_pago === 'Efectivo' ? 'selected' : '' }}>
                         Efectivo
                     </option>
-                    <option value="MercadoPago" {{ $pedido->metodo_pago === 'MercadoPago' ? 'selected' : '' }}>
-                        MercadoPago
+                    <option value="Tarjeta" {{ $pedido->metodo_pago === 'Tarjeta' ? 'selected' : '' }}>
+                        Tarjeta
                     </option>
                 </select>
             </div>
@@ -116,23 +116,23 @@
                         : '<em>ninguno</em>';
 
                     tbody.insertAdjacentHTML('beforeend', `
-            <tr>
-              <td>${item.nombre}</td>
-              <td>${quitadosTexto}</td>
-              <td>
-                <input type="number"
-                       class="form-control form-control-sm cantidad-input"
-                       data-index="${idx}"
-                       min="1"
-                       value="${item.cantidad}">
-              </td>
-              <td>$${item.subtotal.toFixed(2)}</td>
-              <td>
-                <button class="btn btn-sm btn-danger btn-eliminar"
-                        data-index="${idx}">&times;</button>
-              </td>
-            </tr>
-          `);
+                        <tr>
+                          <td>${item.nombre}</td>
+                          <td>${quitadosTexto}</td>
+                          <td>
+                            <input type="number"
+                                   class="form-control form-control-sm cantidad-input"
+                                   data-index="${idx}"
+                                   min="1"
+                                   value="${item.cantidad}">
+                          </td>
+                          <td>$${item.subtotal.toFixed(2)}</td>
+                          <td>
+                            <button class="btn btn-sm btn-danger btn-eliminar"
+                                    data-index="${idx}">&times;</button>
+                          </td>
+                        </tr>
+                      `);
                 });
 
                 // total y habilitar botón
@@ -175,16 +175,16 @@
                         let html = '<table class="table"><thead><tr><th>Imagen</th><th>Nombre</th><th>Precio</th><th></th></tr></thead><tbody>';
                         data.data.forEach(p => {
                             html += `
-                <tr>
-                  <td><img src="${p.imagen}" style="height:40px"></td>
-                  <td>${p.nombre}</td>
-                  <td>$${parseFloat(p.precio).toFixed(2)}</td>
-                  <td>
-                    <button class="btn btn-sm btn-primary btn-seleccionar" data-id="${p.id}">
-                      Seleccionar
-                    </button>
-                  </td>
-                </tr>`;
+                            <tr>
+                              <td><img src="${p.imagen}" style="height:40px"></td>
+                              <td>${p.nombre}</td>
+                              <td>$${parseFloat(p.precio).toFixed(2)}</td>
+                              <td>
+                                <button class="btn btn-sm btn-primary btn-seleccionar" data-id="${p.id}">
+                                  Seleccionar
+                                </button>
+                              </td>
+                            </tr>`;
                         });
                         html += '</tbody></table>';
                         html += `<div class="d-flex justify-content-center my-2"><nav>${data.links}</nav></div>`;
@@ -219,14 +219,14 @@
                             cont.innerHTML = '<label>Quitar ingredientes:</label>';
                             p.ingredientes.forEach(ing => {
                                 cont.innerHTML += `
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox"
-                           value="${ing.id}" id="ing-${ing.id}"
-                           ${ing.es_obligatorio ? 'disabled checked' : ''}>
-                    <label class="form-check-label" for="ing-${ing.id}">
-                      ${ing.nombre}${ing.es_obligatorio ? ' (obligatorio)' : ''}
-                    </label>
-                  </div>`;
+                              <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       value="${ing.id}" id="ing-${ing.id}"
+                                       ${ing.es_obligatorio ? 'disabled checked' : ''}>
+                                <label class="form-check-label" for="ing-${ing.id}">
+                                  ${ing.nombre}${ing.es_obligatorio ? ' (obligatorio)' : ''}
+                                </label>
+                              </div>`;
                             });
                             // guardar id/precio
                             const btnAdd = document.getElementById('d-agregar');
@@ -270,6 +270,11 @@
                     metodo_pago: document.getElementById('metodo-pago').value
                 };
 
+                // ------- Agrega estos console.log para inspeccionar ------
+                console.log('DEBUG antes de enviar PATCH a:', updateUrl);
+                console.log('DEBUG payload:', payload);
+                // ----------------------------------------------------------
+
                 fetch(updateUrl, {
                     method: 'PATCH',
                     credentials: 'same-origin',
@@ -280,12 +285,21 @@
                     },
                     body: JSON.stringify(payload)
                 })
-                    .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
-                    .then(() => Swal.fire('Listo', 'Pedido actualizado', 'success')
-                        .then(() => window.location.href = '{{ route("Caja.dashboard") }}'))
-                    .catch(e => Swal.fire('Error', 'No se pudo actualizar', 'error'));
+                    .then(r => {
+                        console.log('DEBUG respuesta status:', r.status, 'ok?', r.ok);
+                        return r.ok ? r.json() : r.json().then(err => Promise.reject(err));
+                    })
+                    .then(json => {
+                        console.log('DEBUG respuesta JSON:', json);
+                        return Swal.fire('Listo', 'Pedido actualizado', 'success')
+                            .then(() => window.location.href = '{{ route("Caja.dashboard") }}');
+                    })
+                    .catch(error => {
+                        console.error('DEBUG error en fetch PATCH:', error);
+                        const msg = error.error || 'No se pudo actualizar';
+                        Swal.fire('Error', msg, 'error');
+                    });
             };
-
         }); //DOMContentLoaded
     </script>
 @endsection

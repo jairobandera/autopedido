@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->string('nombre');
             $table->string('contrasena');
-            $table->enum('rol', ['Administrador', 'Cajero', 'Cocina', 'Cliente']);
+            $table->enum('rol', ['Administrador', 'Cajero', 'Cocina']);
             $table->boolean('activo')->default(true);
             $table->timestamps();
         });

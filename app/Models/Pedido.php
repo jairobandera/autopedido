@@ -3,6 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\PuntoPedido;  // <-- importa PuntoPedido aquí
+use App\Models\Pago;
+use App\Models\Usuario;
+use App\Models\DetallePedido;
+use App\Models\Cliente;
 
 class Pedido extends Model
 {
@@ -19,9 +24,9 @@ class Pedido extends Model
         return $this->belongsTo(Usuario::class, 'usuario_id');
     }
 
-    public function puntosPedidos()
+    public function puntoPedido()
     {
-        return $this->hasMany(PuntoPedido::class);
+        return $this->hasOne(PuntoPedido::class);
     }
 
     public function detalles()
@@ -29,9 +34,16 @@ class Pedido extends Model
         return $this->hasMany(DetallePedido::class, 'pedido_id');
     }
 
-    public function cliente()
+    public function clientes()
     {
-        return $this->belongsTo(Cliente::class, 'cliente_id');
+        return $this->belongsToMany(
+            Cliente::class,
+            'punto_pedido',
+            'pedido_id',
+            'cliente_id'
+        )
+            ->withPivot(['cantidad', 'tipo', 'fecha'])
+            ->withTimestamps();
     }
 
 

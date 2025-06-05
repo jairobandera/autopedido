@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('pagos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('pedido_id')->constrained('pedidos')->onDelete('cascade');
-            $table->enum('tipo', ['Efectivo', 'MercadoPago']);
+            $table->enum('tipo', ['Efectivo', 'Tarjeta']);
             $table->float('monto');
             $table->dateTime('fecha');
             $table->enum('estado', ['Completado', 'Pendiente', 'Fallido']);

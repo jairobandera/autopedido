@@ -131,6 +131,8 @@ Route::middleware('auth')->group(function () {
             ->name('caja.pagos.estado');
         Route::get('/caja/pedidos/{pedido}/comprobante', [PedidoController::class, 'comprobante'])
             ->name('caja.pedidos.comprobante');
+        Route::get('/caja/clientes/search', [ClienteController::class, 'search'])
+            ->name('caja.clientes.search');
 
         Route::resource('caja/pedidos', PedidoController::class, ['as' => 'caja']);
     });

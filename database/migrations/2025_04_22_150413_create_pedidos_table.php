@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('usuario_id')->constrained('usuarios');
             $table->float('total');
-            $table->enum('metodo_pago', ['Efectivo', 'MercadoPago']);
+            $table->enum('metodo_pago', ['Efectivo', 'Tarjeta']);
             $table->enum('estado', ['Cancelado', 'Recibido', 'En Preparacion', 'Listo', 'Entregado']);
             $table->string('codigo');
             $table->timestamps();

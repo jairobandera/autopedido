@@ -1,12 +1,31 @@
+{{-- resources/views/Caja/create.blade.php --}}
 @extends('layouts.app-caja')
 
 @section('title', 'Nuevo Pedido')
 
+<style>
+    /* Desenfocar sutilmente el contenido cuando aparece el backdrop */
+    .modal-backdrop.show {
+        backdrop-filter: blur(3px);
+        opacity: 0.6 !important;
+    }
+</style>
+
 @section('content')
-    {{-- 1. Botón para abrir listado de productos --}}
-    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalProductos">
-        <i class="bi bi-search"></i> Buscar Productos
-    </button>
+    {{-- ---- BOTONES PRINCIPALES ---- --}}
+    <div class="d-flex justify-content-between mb-3">
+        {{-- 1) Botón para abrir listado de productos --}}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProductos">
+            <i class="bi bi-search"></i> Buscar Productos
+        </button>
+
+        {{-- --- Botón para asociar cliente --}}
+        <button id="btn-asociar-cliente" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalClientes">
+            <i class="bi bi-person-plus"></i> Asociar Cliente
+        </button>
+    </div>
+
+    {{-- ---- MODALES ---- --}}
 
     {{-- 2. Modal: Listado de Productos --}}
     <div class="modal fade" id="modalProductos" tabindex="-1">
@@ -24,14 +43,56 @@
                     </div>
                     {{-- Tabla paginada --}}
                     <div id="listado-productos">
-                        {{-- Aquí cargaremos con AJAX --}}
+                        {{-- Se llenará vía AJAX --}}
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- 3. Modal: Detalle de un Producto --}}
+    {{-- 3. Modal: Asignar Cliente --}}
+    <div class="modal fade" id="modalClientes" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Buscar Cliente por Cédula</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    {{-- Input para cédula --}}
+                    <div class="input-group mb-3">
+                        <input id="input-cedula" type="text" class="form-control" placeholder="Ingresa cédula...">
+                        <button id="btn-buscar-cliente" class="btn btn-primary">Buscar</button>
+                    </div>
+                    {{-- Tabla resultados --}}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tabla-clientes">
+                            <thead>
+                                <tr>
+                                    <th>Cédula</th>
+                                    <th>Nombre</th>
+                                    <th>Apellido</th>
+                                    <th>Teléfono</th>
+                                    <th>Puntos</th>
+                                    <th>Activo</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{-- Se llenará con AJAX --}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    {{-- Botón para cerrar sin seleccionar --}}
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- 4. Modal: Detalle de un Producto --}}
     <div class="modal fade" id="modalDetalle" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -43,7 +104,7 @@
                     <img id="d-imagen" class="img-fluid mb-3">
                     <p>Precio: $<span id="d-precio"></span></p>
                     <div id="d-ingredientes" class="mb-3">
-                        {{-- Checkboxes cargados aquí --}}
+                        {{-- Checkboxes generados por JS --}}
                     </div>
                     <div class="mb-3">
                         <label>Cantidad</label>
@@ -57,15 +118,15 @@
         </div>
     </div>
 
-    {{-- 4. Tabla del Carrito --}}
+    {{-- 5. Tabla del Carrito --}}
     <h5>Carrito</h5>
     <div class="table-responsive mb-3">
-        {{-- Metodo Pago --}}
+        {{-- Método Pago --}}
         <div class="d-flex justify-content-end align-items-center mb-3">
             <label for="metodo-pago-global" class="me-2 mb-0">Método de Pago:</label>
             <select id="metodo-pago-global" class="form-select w-auto">
                 <option value="Efectivo" selected>Efectivo</option>
-                <option value="MercadoPago">MercadoPago</option>
+                <option value="Tarjeta">Tarjeta</option>
             </select>
         </div>
         <table class="table table-sm" id="tabla-carrito">
@@ -78,276 +139,63 @@
                     <th></th>
                 </tr>
             </thead>
-            <tbody></tbody>
+            <tbody>
+                {{-- Se llenará con JS --}}
+            </tbody>
         </table>
     </div>
 
-    {{-- 5. Botón Finalizar Pedido --}}
+    {{-- Mostrar cliente seleccionado o “Sin cliente” --}}
+    <div id="cliente-seleccionado" class="mb-3">
+        Cliente: <span id="nombre-cliente">Sin cliente</span>
+    </div>
+
+    {{-- 6. Botón Finalizar Pedido --}}
     <button id="btn-finalizar" class="btn btn-success" disabled>Entregar Pedido</button>
+
+    {{-- Modal Pedido Creado --}}
+    <div class="modal fade" id="modalPedidoCreado" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"
+        data-pedido-id="">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Pedido Creado</h5>
+                    {{-- Ocultamos la “X” de cierre --}}
+                    <button type="button" class="btn-close d-none" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Código de pedido: <strong id="modal-codigo-nuevo"></strong></p>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-imprimir-comprobante" class="btn btn-secondary">
+                        Imprimir Comprobante
+                    </button>
+                    <button id="btn-ver-pedidos" class="btn btn-success">
+                        Ver Pedidos
+                    </button>
+                    <button id="btn-otro-pedido" class="btn btn-primary">
+                        Tomar otro pedido
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ——————————————— --}}
+    {{-- VARIABLES PARA EL JS (data-attributes) --}}
+    {{-- ——————————————— --}}
+
+    {{-- Base URL para Productos (usada en caja/create.js) --}}
+    <div id="base-prod-url" data-url="{{ url('/caja/productos') }}" class="d-none"></div>
+
+    {{-- Ruta para guardar pedido (usada en caja/create.js) --}}
+    <div id="store-pedido-url" data-url="{{ route('caja.pedidos.store') }}" class="d-none"></div>
+
+    {{-- Ruta para redirigir a Dashboard (usada en caja/create.js) --}}
+    <div id="dashboard-pedidos-url" data-url="{{ route('Caja.dashboard') }}" class="d-none"></div>
 @endsection
 
-<!-- Modal Pedido Creado -->
-<div class="modal fade" id="modalPedidoCreado" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Pedido Creado</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Código de pedido: <strong id="modal-codigo-nuevo"></strong></p>
-            </div>
-            <div class="modal-footer">
-                <button id="btn-imprimir-comprobante" class="btn btn-secondary">
-                    Imprimir Comprobante
-                </button>
-                <button id="btn-entregar-pedido" class="btn btn-success">
-                    Entregar Pedido
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-{{-- Modal: MercadoPago --}}
-<div class="modal fade" id="modalMercadoPago" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Pago con MercadoPago</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="formMp">
-                    <div class="mb-3">
-                        <label class="form-label">Número de tarjeta</label>
-                        <input id="mp-cardNumber" class="form-control" />
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col">
-                            <label class="form-label">Mes (MM)</label>
-                            <input id="mp-expirationMonth" class="form-control" />
-                        </div>
-                        <div class="col">
-                            <label class="form-label">Año (YY)</label>
-                            <input id="mp-expirationYear" class="form-control" />
-                        </div>
-                        <div class="col">
-                            <label class="form-label">CVV</label>
-                            <input id="mp-securityCode" class="form-control" />
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Titular de la tarjeta</label>
-                        <input id="mp-cardholderName" class="form-control" />
-                    </div>
-                    <button id="btn-mp-pagar" type="submit" class="btn btn-primary w-100">
-                        Pagar con MercadoPago
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 @section('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            let pagina = 1, termino = '';
-            const carrito = [];
-            const baseProdUrl = "{{ url('/caja/productos') }}";
-
-            // 1) Cargar listado de productos
-            function loadProductos() {
-                fetch(`${baseProdUrl}?page=${pagina}&q=${encodeURIComponent(termino)}`, {
-                    headers: { Accept: 'application/json' }
-                })
-                    .then(r => r.json())
-                    .then(data => {
-                        let html = '<table class="table"><thead><tr><th>Imagen</th><th>Nombre</th><th>Precio</th><th></th></tr></thead><tbody>';
-                        data.data.forEach(p => {
-                            html += `<tr>
-                                                                <td><img src="${p.imagen}" style="height:40px"></td>
-                                                                <td>${p.nombre}</td>
-                                                                <td>$${parseFloat(p.precio).toFixed(2)}</td>
-                                                                <td>
-                                                                  <button class="btn btn-sm btn-primary btn-seleccionar" data-id="${p.id}">
-                                                                    Seleccionar
-                                                                  </button>
-                                                                </td>
-                                                            </tr>`;
-                        });
-                        html += '</tbody></table>';
-                        // paginación centrada
-                        html += `
-                                                            <div class="d-flex justify-content-center my-2">
-                                                              <nav>${data.links}</nav>
-                                                            </div>
-                                                        `;
-                        document.getElementById('listado-productos').innerHTML = html;
-                    });
-            }
-
-            // 2) Buscar
-            document.getElementById('btn-search').onclick = () => {
-                termino = document.getElementById('search-productos').value.trim();
-                pagina = 1;
-                loadProductos();
-            };
-
-            // 3) Delegación en listado: paginación y selección
-            document.getElementById('listado-productos').addEventListener('click', e => {
-                // paginación
-                const link = e.target.closest('a.page-link');
-                if (link) {
-                    e.preventDefault();
-                    const url = new URL(link.getAttribute('href'), window.location.origin);
-                    pagina = url.searchParams.get('page') || 1;
-                    loadProductos();
-                    return;
-                }
-                // seleccionar producto
-                if (e.target.matches('.btn-seleccionar')) {
-                    const id = e.target.dataset.id;
-                    fetch(`${baseProdUrl}/${id}`, {
-                        headers: { Accept: 'application/json' }
-                    })
-                        .then(r => r.json())
-                        .then(p => {
-                            // rellenar modalDetalle
-                            document.getElementById('d-titulo').textContent = p.nombre;
-                            document.getElementById('d-imagen').src = p.imagen;
-                            document.getElementById('d-precio').textContent = parseFloat(p.precio).toFixed(2);
-                            document.getElementById('d-cantidad').value = 1;
-                            // ingredientes
-                            const cont = document.getElementById('d-ingredientes');
-                            cont.innerHTML = '<label>Quitar ingredientes:</label>';
-                            p.ingredientes.forEach(ing => {
-                                cont.innerHTML += `
-                                                                <div class="form-check">
-                                                                    <input class="form-check-input" type="checkbox"
-                                                                        value="${ing.id}" id="ing-${ing.id}"
-                                                                        ${ing.es_obligatorio ? 'disabled checked' : ''}>
-                                                                    <label class="form-check-label" for="ing-${ing.id}">
-                                                                    ${ing.nombre} ${ing.es_obligatorio ? '(obligatorio)' : ''}
-                                                                    </label>
-                                                                </div>`;
-                            });
-                            // guardar datos en botón
-                            const btnAdd = document.getElementById('d-agregar');
-                            btnAdd.dataset.id = p.id;
-                            btnAdd.dataset.precio = p.precio;
-                            // mostrar modal detalle
-                            new bootstrap.Modal(document.getElementById('modalDetalle')).show();
-                        });
-                }
-            });
-
-            // 4) Agregar al carrito desde modalDetalle
-            document.getElementById('d-agregar').onclick = () => {
-                const btn = document.getElementById('d-agregar');
-                const id = btn.dataset.id;
-                const nombre = document.getElementById('d-titulo').textContent;
-                const precio = parseFloat(btn.dataset.precio);
-                const cantidad = parseInt(document.getElementById('d-cantidad').value, 10);
-
-                // ingredientes quitados
-                const quitados = Array.from(
-                    document.querySelectorAll('#d-ingredientes .form-check-input:checked')
-                )
-                    .filter(ch => !ch.disabled)
-                    .map(ch => {
-                        const id = parseInt(ch.value, 10);
-                        // obtenemos el texto del label (sin “(obligatorio)”, si lo hubiera)
-                        let nombre = document.querySelector(`label[for="${ch.id}"]`).textContent;
-                        nombre = nombre.replace(/\s*\(obligatorio\)$/, '').trim();
-                        return { id, nombre };
-                    });
-
-                const subtotal = precio * cantidad;
-                carrito.push({ id, nombre, precio, cantidad, quitados, subtotal });
-
-                renderCarrito();
-                bootstrap.Modal.getInstance(document.getElementById('modalDetalle')).hide();
-            };
-
-            // helper: renderizar carrito
-            function renderCarrito() {
-                const tbody = document.querySelector('#tabla-carrito tbody');
-                tbody.innerHTML = '';
-                carrito.forEach((item, idx) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                                                            <td>${item.nombre}</td>
-                                                            <td>${item.quitados.length
-                            ? item.quitados.map(q => q.nombre).join(', ')
-                            : '<em>ninguno</em>'}</td>
-                                                            <td>${item.cantidad}</td>
-                                                            <td>$${item.subtotal.toFixed(2)}</td>
-                                                            <td>
-                                                              <button class="btn btn-sm btn-danger btn-eliminar" data-index="${idx}">
-                                                                &times;
-                                                              </button>
-                                                            </td>
-                                                        `;
-                    tbody.appendChild(tr);
-                });
-                document.getElementById('btn-finalizar').disabled = carrito.length === 0;
-            }
-
-            // 5) Eliminar del carrito
-            document.querySelector('#tabla-carrito tbody').addEventListener('click', e => {
-                if (e.target.matches('.btn-eliminar')) {
-                    const idx = e.target.dataset.index;
-                    carrito.splice(idx, 1);
-                    renderCarrito();
-                }
-            });
-
-            // 6) Finalizar Pedido
-            document.getElementById('btn-finalizar').onclick = () => {
-                const metodo = document.getElementById('metodo-pago-global').value;
-                const payload = {
-                    items: carrito.map(item => ({
-                        id: item.id,
-                        cantidad: item.cantidad,
-                        // enviamos sólo los IDs de quitados, no los nombres
-                        quitados: item.quitados.map(q => q.id),
-                    })),
-                    metodo_pago: metodo  // o el que hayas seleccionado
-                };
-                fetch('{{ route("caja.pedidos.store") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify(payload)
-                })
-                    .then(r => r.json())
-                    .then(json => {
-                        // Mostramos modal
-                        document.getElementById('modal-codigo-nuevo').textContent = json.codigo;
-                        const modalEl = document.getElementById('modalPedidoCreado');
-                        modalEl.dataset.id = json.pedido_id;
-                        new bootstrap.Modal(modalEl).show();
-                    });
-            };
-
-            // al abrir el modal de productos, carga la página 1
-            document.getElementById('modalProductos')
-                .addEventListener('shown.bs.modal', loadProductos);
-        });
-
-        // Botón "Imprimir Comprobante"
-        document.getElementById('btn-imprimir-comprobante').onclick = () => {
-            const id = document.getElementById('modalPedidoCreado').dataset.id;
-            window.open(`/caja/pedidos/${id}/comprobante`, '_blank');
-        };
-
-        // Botón "Entregar Pedido"
-        document.getElementById('btn-entregar-pedido').onclick = () => {
-            location.href = '{{ route("Caja.dashboard") }}';
-        };
-    </script>
+    {{-- Incluir el JS externo (asegúrate de que el path corresponda) --}}
+    <script src="{{ asset('js/caja/create.js') }}"></script>
 @endsection
