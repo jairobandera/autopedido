@@ -11,7 +11,9 @@ use App\Models\Cliente;
 
 class Pedido extends Model
 {
-    protected $fillable = ['usuario_id', 'total', 'metodo_pago', 'estado', 'codigo'];
+    protected $table = 'pedidos';
+
+    protected $fillable = ['usuario_id', 'cliente_id', 'total', 'metodo_pago', 'estado', 'codigo'];
 
     public function pago()
     {
@@ -22,6 +24,11 @@ class Pedido extends Model
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
+
+    public function cliente()
+    {
+        return $this->belongsTo(Cliente::class, 'cliente_id');
     }
 
     public function puntoPedido()

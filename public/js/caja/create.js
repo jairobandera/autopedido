@@ -1,4 +1,5 @@
 // public/js/caja.js
+window.clienteSeleccionado = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     let pagina = 1,
@@ -8,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseProdUrl = document
         .getElementById('base-prod-url')
         .getAttribute('data-url');
-    let clienteSeleccionado = null;
+    //let clienteSeleccionado = null;
     let nombreClienteSeleccionado = '';
 
     // 1) Instancia única del modal de “Pedido Creado”
@@ -278,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = parseInt(e.target.getAttribute('data-id'), 10);
             const nombre = e.target.getAttribute('data-nombre');
             const apellido = e.target.getAttribute('data-apellido');
-            clienteSeleccionado = id;
+            window.clienteSeleccionado = id;
             nombreClienteSeleccionado = `${nombre} ${apellido}`;
 
             document.getElementById('nombre-cliente').textContent =
@@ -304,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).then(result => {
             if (!result.isConfirmed) return;
 
-            if (!clienteSeleccionado) {
+            if (!window.clienteSeleccionado) {
                 Swal.fire({
                     icon: 'question',
                     text: 'No seleccionaste ningún cliente. ¿Deseas continuar sin asociar cliente?',
@@ -315,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (res.isConfirmed) enviarPedido(null);
                 });
             } else {
-                enviarPedido(clienteSeleccionado);
+                enviarPedido(window.clienteSeleccionado);
             }
         });
     });
@@ -342,6 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })),
             metodo_pago: metodo
         };
+        console.log('→ PAYLOAD a enviar a store():', payload);
 
         fetch(storeUrl, {
             method: 'POST',
@@ -398,7 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-otro-pedido').addEventListener('click', () => {
         carrito.length = 0;
         renderCarrito();
-        clienteSeleccionado = null;
         nombreClienteSeleccionado = '';
         document.getElementById('nombre-cliente').textContent = 'Sin cliente';
         modal.hide();
@@ -408,4 +409,305 @@ document.addEventListener('DOMContentLoaded', () => {
     document
         .getElementById('modalProductos')
         .addEventListener('shown.bs.modal', loadProductos);
+
+    // 1) Registrar Cliente (modalRegistrarCliente)
+    const btnGuardarCliente = document.getElementById('btn-guardar-cliente');
+    const formRegistrarCliente = document.getElementById('form-registrar-cliente');
+
+    btnGuardarCliente.addEventListener('click', async () => {
+        // Limpiar estados previos de validación
+        ['rc-cedula', 'rc-nombre', 'rc-apellido', 'rc-telefono'].forEach(id => {
+            const input = document.getElementById(id);
+            const feedback = document.getElementById('error-' + id.split('-')[1]);
+            if (input) input.classList.remove('is-invalid');
+            if (feedback) feedback.textContent = '';
+        });
+
+        // Obtener valores del formulario
+        const cedula = document.getElementById('rc-cedula').value.trim();
+        const nombre = document.getElementById('rc-nombre').value.trim();
+        const apellido = document.getElementById('rc-apellido').value.trim();
+        const telefono = document.getElementById('rc-telefono').value.trim();
+
+        const payload = { cedula, nombre, apellido, telefono };
+
+        try {
+            // Tomar la URL desde el atributo action del formulario
+            const url = formRegistrarCliente.getAttribute('action');
+
+            // Tomar el token CSRF desde la meta-tag
+            const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+            const token = tokenMeta ? tokenMeta.getAttribute('content') : '';
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.status === 422) {
+                // Errores de validación: response.json() tendrá { errors: { campo: [ … ] } }
+                const errors = await response.json();
+                for (const campo in errors.errors) {
+                    const inputId = 'rc-' + campo;
+                    const feedbackId = 'error-' + campo;
+                    const inputElem = document.getElementById(inputId);
+                    const feedbackElem = document.getElementById(feedbackId);
+
+                    if (inputElem) inputElem.classList.add('is-invalid');
+                    if (feedbackElem) feedbackElem.textContent = errors.errors[campo][0];
+                }
+                return;
+            }
+
+            // Si no hubo error de validación, obtenemos el JSON de respuesta
+            const data = await response.json();
+            if (data.success) {
+                // 1) Cerrar modal
+                const modalRegistrar = bootstrap.Modal.getInstance(
+                    document.getElementById('modalRegistrarCliente')
+                );
+                modalRegistrar.hide();
+
+                // 2) Mostrar SweetAlert de confirmación
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cliente registrado',
+                    text: `Se creó el cliente ${data.cliente.nombre} ${data.cliente.apellido}.`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                // 3) (Opcional) Asociar este cliente como “seleccionado” en el pedido:
+                //window.clienteSeleccionado = data.cliente.id;
+                //document.getElementById('nombre-cliente').textContent =
+                //   `${data.cliente.nombre} ${data.cliente.apellido}`;
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'No se pudo crear el cliente.',
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de red',
+                text: 'No se pudo comunicar con el servidor.',
+            });
+        }
+    });
+
+    // 2) Consultar Puntos (modalConsultarPuntos)
+    const btnBuscarPuntos = document.getElementById('btn-buscar-puntos');
+    const formConsultarPuntos = document.getElementById('form-consultar-puntos');
+
+    // Obtenemos la URL base desde el atributo data-url que definimos en el Blade
+    const puntosClienteBaseUrl = document
+        .getElementById('puntos-cliente-url')
+        .getAttribute('data-url');
+
+    let clienteActualId = null;
+
+    btnBuscarPuntos.addEventListener('click', async () => {
+        // Limpiar validación y resultados previos
+        document.getElementById('cp-cedula').classList.remove('is-invalid');
+        document.getElementById('error-cp-cedula').textContent = '';
+        document.getElementById('resultado-puntos').classList.add('d-none');
+        document.getElementById('mensaje-puntos').classList.add('d-none');
+
+        // Obtener cédula
+        const cedula = document.getElementById('cp-cedula').value.trim();
+        if (!cedula) {
+            document.getElementById('cp-cedula').classList.add('is-invalid');
+            document.getElementById('error-cp-cedula').textContent = 'La cédula es obligatoria.';
+            return;
+        }
+
+        try {
+            // Hacemos GET a /caja/clientes/puntos?cedula=XXXX
+            const url = `${puntosClienteBaseUrl}?cedula=${encodeURIComponent(cedula)}`;
+
+            const response = await fetch(url.toString(), {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (response.status === 422) {
+                const errors = await response.json();
+                document.getElementById('cp-cedula').classList.add('is-invalid');
+                document.getElementById('error-cp-cedula').textContent = errors.errors.cedula[0];
+                return;
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                // Rellenar datos en el modal
+                document.getElementById('rp-nombre').textContent = data.cliente.nombre;
+                document.getElementById('rp-apellido').textContent = data.cliente.apellido;
+                document.getElementById('rp-cedula').textContent = data.cliente.cedula;
+                document.getElementById('rp-telefono').textContent = data.cliente.telefono;
+                document.getElementById('rp-puntos').textContent = data.cliente.puntos;
+
+                document.getElementById('resultado-puntos').classList.remove('d-none');
+                clienteActualId = data.cliente.id;
+            } else {
+                // data.success === false → “no encontrado”
+                document.getElementById('mensaje-puntos').textContent =
+                    data.message || 'No se pudo obtener los puntos.';
+                document.getElementById('mensaje-puntos').classList.remove('d-none');
+                document.getElementById('btn-editar-cliente').classList.add('d-none');
+                clienteActualId = null;
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('mensaje-puntos').textContent = 'Error de red al intentar consultar puntos.';
+            document.getElementById('mensaje-puntos').classList.remove('d-none');
+        }
+    });
+
+    // 3) Al hacer clic en “Editar Cliente” dentro del modal de puntos
+    const btnEditarCliente = document.getElementById('btn-editar-cliente');
+    const modalEditarClienteEl = document.getElementById('modalEditarCliente');
+    const modalEditarCliente = new bootstrap.Modal(modalEditarClienteEl, {
+        backdrop: 'static',
+        keyboard: false
+    });
+
+    // Form inputs en “Editar Cliente”
+    const inputEcId = document.getElementById('ec-id');
+    const inputEcCedula = document.getElementById('ec-cedula');
+    const inputEcNombre = document.getElementById('ec-nombre');
+    const inputEcApellido = document.getElementById('ec-apellido');
+    const inputEcTelefono = document.getElementById('ec-telefono');
+
+    // Botón de guardar edición
+    const btnGuardarEdicion = document.getElementById('btn-guardar-edicion');
+
+    // Escuchar clic en “Editar Cliente”
+    btnEditarCliente.addEventListener('click', () => {
+        if (!clienteActualId) return;
+
+        // Rellenar formulario con los datos que ya están visibles en el modal “Consultar Puntos”
+        inputEcId.value = clienteActualId;
+        inputEcCedula.value = document.getElementById('rp-cedula').textContent;
+        inputEcNombre.value = document.getElementById('rp-nombre').textContent;
+        inputEcApellido.value = document.getElementById('rp-apellido').textContent;
+        inputEcTelefono.value = document.querySelector('#rp-telefono').textContent;
+        // Limpiar validaciones previas en el formulario de edición
+        ['ec-nombre', 'ec-apellido', 'ec-telefono'].forEach(id => {
+            document.getElementById(id).classList.remove('is-invalid');
+            document.getElementById('error-' + id).textContent = '';
+        });
+
+        // Abrir modal de edición
+        modalEditarCliente.show();
+    });
+
+    // 4) Guardar cambios de cliente (clic en “Guardar Cambios”)
+    btnGuardarEdicion.addEventListener('click', async () => {
+        // Limpiar validaciones previas
+        ['ec-nombre', 'ec-apellido', 'ec-telefono'].forEach(id => {
+            const input = document.getElementById(id);
+            const feedback = document.getElementById('error-' + id);
+            if (input) input.classList.remove('is-invalid');
+            if (feedback) feedback.textContent = '';
+        });
+
+        const id = inputEcId.value;
+        const nombre = inputEcNombre.value.trim();
+        const apellido = inputEcApellido.value.trim();
+        const telefono = inputEcTelefono.value.trim();
+
+        // Validar campos obligatorios
+        if (!nombre) {
+            inputEcNombre.classList.add('is-invalid');
+            document.getElementById('error-ec-nombre').textContent = 'El nombre es obligatorio.';
+            return;
+        }
+        if (!apellido) {
+            inputEcApellido.classList.add('is-invalid');
+            document.getElementById('error-ec-apellido').textContent = 'El apellido es obligatorio.';
+            return;
+        }
+
+        // Armar payload para PATCH
+        const payload = { nombre, apellido, telefono };
+
+        try {
+            // Tomar CSRF token
+            const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+            const token = tokenMeta ? tokenMeta.getAttribute('content') : '';
+
+            // Construir la URL de actualización reemplazando __ID__ por el id real
+            let updateUrlTemplate = document
+                .getElementById('update-cliente-url')
+                .getAttribute('data-url');
+            // Ejemplo: "/caja/clientes/__ID__" → reemplazar __ID__
+            const updateUrl = updateUrlTemplate.replace('__ID__', encodeURIComponent(id));
+
+            const response = await fetch(updateUrl, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.status === 422) {
+                // Errores de validación de Laravel
+                const errors = await response.json();
+                for (const campo in errors.errors) {
+                    const inputId = 'ec-' + campo;
+                    const feedbackId = 'error-ec-' + campo;
+                    const inputElem = document.getElementById(inputId);
+                    const feedbackEl = document.getElementById(feedbackId);
+                    if (inputElem) inputElem.classList.add('is-invalid');
+                    if (feedbackEl) feedbackEl.textContent = errors.errors[campo][0];
+                }
+                return;
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                // 1) Cerrar modal de edición
+                modalEditarCliente.hide();
+
+                // 2) Actualizar el contenido del modal “Consultar Puntos” con los nuevos valores
+                document.getElementById('rp-nombre').textContent = data.cliente.nombre;
+                document.getElementById('rp-apellido').textContent = data.cliente.apellido;
+                // cedula no cambia
+                // teléfono no se muestra en el modal de puntos, pero si quisieras agregarlo, aquí lo actualizarías
+                document.getElementById('rp-telefono').textContent = data.cliente.telefono;
+
+                // 3) Mostrar notificación de éxito (opcional)
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cliente actualizado',
+                    text: `Datos de ${data.cliente.nombre} actualizados.`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'No se pudo actualizar el cliente.'
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de red',
+                text: 'No se pudo comunicar con el servidor.'
+            });
+        }
+    });
 });

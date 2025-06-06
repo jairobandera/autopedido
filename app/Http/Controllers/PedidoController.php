@@ -84,6 +84,7 @@ class PedidoController extends Controller
             // 2) Crear el pedido en estado 'Recibido'
             $pedido = Pedido::create([
                 'usuario_id' => Auth::id(),
+                'cliente_id' => $data['cliente_id'] ?? null,
                 'total' => 0,  // se actualiza luego
                 'metodo_pago' => $data['metodo_pago'],
                 'estado' => 'Recibido',
@@ -122,29 +123,6 @@ class PedidoController extends Controller
                 'estado' => $data['metodo_pago'] === 'Efectivo' ? 'Pendiente' : 'Pendiente',
             ]);
 
-            // 5) Si se recibió cliente_id, crear registro en punto_pedido
-            if (!empty($data['cliente_id'])) {
-                // Lógica de puntos: 1 punto cada $10 de total, mínimo 10, máximo 100
-                $puntos = floor($total / 10);
-                $puntos = max(10, min($puntos, 100));
-                \Log::debug('DEBUG en store(): puntos generados = ' . $puntos . ' para cliente_id=' . $data['cliente_id'] . ' y pedido_id=' . $pedido->id);
-
-                PuntoPedido::create([
-                    'cliente_id' => $data['cliente_id'],
-                    'pedido_id' => $pedido->id,
-                    'cantidad' => $puntos,
-                    'tipo' => 'Canjeo', // o 'Redencion' si corresponde
-                    'fecha' => now(),
-                ]);
-
-                // (Opcional) Actualizar total de puntos en la tabla clientes
-                $cliente = Cliente::find($data['cliente_id']);
-                if ($cliente) {
-                    $cliente->puntos += $puntos;
-                    $cliente->save();
-                }
-            }
-
             DB::commit();
 
             return response()->json([
@@ -163,7 +141,10 @@ class PedidoController extends Controller
 
     public function show($id)
     {
-        $pedido = Pedido::with('detalles.producto')->findOrFail($id);
+        $pedido = Pedido::with([
+            'detalles.producto',
+            'detalles.ingredientesQuitados'
+        ])->findOrFail($id);
 
         return response()->json([
             'codigo' => $pedido->codigo,
@@ -179,13 +160,58 @@ class PedidoController extends Controller
 
     public function cambiarEstado(Request $request, $id)
     {
+
+        \Log::debug("---- llegar a cambiarEstado() para pedido: $id ----");
+        \Log::debug("Payload recibo:", $request->all());
+
         $data = $request->validate([
             'estado' => 'required|in:Cancelado,Recibido,En Preparacion,Listo,Entregado'
         ]);
 
         $pedido = Pedido::findOrFail($id);
+        \Log::debug("Pedido antes de cambiar estado:", [
+            'estado_actual' => $pedido->estado,
+            'cliente_id' => $pedido->cliente_id,
+            'total' => $pedido->total,
+        ]);
         $pedido->estado = $data['estado'];
         $pedido->save();
+
+        // Si acaban de marcarlo como "Entregado", generamos puntos
+        if ($data['estado'] === 'Entregado' && $pedido->cliente_id) {
+            // 1) Evitar duplicar puntos si ya existe un PuntoPedido para este pedido
+            $existe = PuntoPedido::where('pedido_id', $pedido->id)->exists();
+            \Log::debug("¿Ya existe PuntoPedido para este pedido? ", ['existe' => $existe]);
+            if (!$existe) {
+                // 2) Calcular puntos: 1 punto por cada $10 de total, mínimo 10, máximo 100
+                $total = $pedido->total;
+                $puntosAGenerar = floor($total / 10);
+                $puntosAGenerar = max(10, min($puntosAGenerar, 100));
+                \Log::debug("Calculando puntos para cliente {$pedido->cliente_id}: $puntosAGenerar");
+
+                // 3) Crear registro en punto_pedido
+                PuntoPedido::create([
+                    'cliente_id' => $pedido->cliente_id,
+                    'pedido_id' => $pedido->id,
+                    'cantidad' => $puntosAGenerar,
+                    'tipo' => 'Canjeo', // o el tipo que uses
+                    'fecha' => now(),
+                ]);
+                \Log::debug("PuntoPedido creado para el pedido {$pedido->id}");
+
+                // 4) Actualizar total de puntos en el cliente
+                $cliente = Cliente::find($pedido->cliente_id);
+                if ($cliente) {
+                    $cliente->puntos += $puntosAGenerar;
+                    $cliente->save();
+                    \Log::debug("Cliente {$cliente->id} actualizado puntos a: {$cliente->puntos}");
+                } else {
+                    \Log::debug("No se encontró cliente con ID {$pedido->cliente_id}");
+                }
+            } else {
+                \Log::debug("No se genera puntos: existe=$existe o cliente_id vacío");
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -247,10 +273,16 @@ class PedidoController extends Controller
             'items.*.quitados' => 'nullable|array',
             'items.*.quitados.*' => 'integer|exists:ingredientes,id',
             'metodo_pago' => 'required|in:Efectivo,Tarjeta',
+            'cliente_id' => 'nullable|exists:clientes,id'
         ]);
 
         $pedido = Pedido::findOrFail($id);
         $pedido->detalles()->delete();
+
+        // Si recibes 'cliente_id', lo asociamos:
+        if (isset($data['cliente_id'])) {
+            $pedido->cliente_id = $data['cliente_id'];
+        }
 
         $total = 0;
         foreach ($data['items'] as $item) {
@@ -350,7 +382,9 @@ class PedidoController extends Controller
     {
         // Cargamos el pedido junto con su PuntoPedido y el Cliente asociado:
         $pedido = Pedido::with([
-            'puntoPedido.cliente'
+            'cliente',       // <-- cliente directo (basado en cliente_id)
+            'puntoPedido'    // <-- relación a PuntoPedido, si ya existe
+            // 'detalles.producto'  // opcional, si quieres listar productos en el comprobante
         ])->findOrFail($pedido->id);
 
         \Log::debug('DEBUG en comprobante():');

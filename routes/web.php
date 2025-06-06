@@ -122,7 +122,7 @@ Route::middleware('auth')->group(function () {
             ->name('caja.productos.index');                                                  //detalle de un producto:
         Route::post('/caja/pedidos', [PedidoController::class, 'store'])
             ->name('caja.pedidos.store');
-        Route::get('/caja/pedidos/{id}', [App\Http\Controllers\PedidoController::class, 'show'])
+        Route::get('/caja/pedidos/{id}', [PedidoController::class, 'show'])
             ->name('caja.pedidos.show');
         // Marca un pedido como 'Entregado' o el estado que necesites
         Route::patch('/caja/pedidos/{id}/estado', [PedidoController::class, 'cambiarEstado'])
@@ -133,6 +133,28 @@ Route::middleware('auth')->group(function () {
             ->name('caja.pedidos.comprobante');
         Route::get('/caja/clientes/search', [ClienteController::class, 'search'])
             ->name('caja.clientes.search');
+        // Ruta AJAX para cambiar el estado de un pedido
+        Route::patch(
+            '/caja/pedidos/{id}/estado',
+            [PedidoController::class, 'cambiarEstado']
+        )->name('caja.pedidos.cambiarEstado');
+
+        // 2.1.1. Mostrar formulario de “Registrar Cliente”
+        Route::get('/clientes/create', [ClienteController::class, 'create'])
+            ->name('caja.clientes.create');
+
+        // 2.1.2. Procesar el formulario y guardar cliente
+        Route::post('/clientes', [ClienteController::class, 'store'])
+            ->name('caja.clientes.store');
+
+        // 2.1.3. Obtener puntos de un cliente (vía AJAX)
+        //     — Por cedula de cliente —
+        Route::get('/clientes/puntos', [ClienteController::class, 'obtenerPuntosPorCedula'])
+            ->name('caja.clientes.puntosCedula');
+
+        // 2.1.4 Actualizar datos de un cliente (PATCH /caja/clientes/{id})
+        Route::patch('/clientes/{id}', [ClienteController::class, 'update'])
+            ->name('caja.clientes.update');
 
         Route::resource('caja/pedidos', PedidoController::class, ['as' => 'caja']);
     });

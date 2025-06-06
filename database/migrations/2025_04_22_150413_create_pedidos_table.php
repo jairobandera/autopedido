@@ -12,12 +12,17 @@ return new class extends Migration {
     {
         Schema::create('pedidos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('usuario_id')->constrained('usuarios');
-            $table->float('total');
-            $table->enum('metodo_pago', ['Efectivo', 'Tarjeta']);
-            $table->enum('estado', ['Cancelado', 'Recibido', 'En Preparacion', 'Listo', 'Entregado']);
-            $table->string('codigo');
+            $table->unsignedBigInteger('usuario_id');
+            // ↓ Debe existir esta línea para guardar a qué cliente pertenece
+            $table->unsignedBigInteger('cliente_id')->nullable();
+            $table->decimal('total', 10, 2);
+            $table->string('metodo_pago');
+            $table->string('estado');
+            $table->string('codigo')->unique();
             $table->timestamps();
+
+            $table->foreign('usuario_id')->references('id')->on('usuarios');
+            $table->foreign('cliente_id')->references('id')->on('clientes');
         });
     }
 

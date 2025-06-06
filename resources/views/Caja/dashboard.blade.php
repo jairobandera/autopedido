@@ -252,7 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     .then(res => res.ok ? res.json() : Promise.reject(res.status))
                     .then(p => {
                         document.getElementById('modal-codigo').textContent = p.codigo;
-                        document.getElementById('modal-total').textContent = p.total.toFixed(2);
+                        //document.getElementById('modal-total').textContent = p.total.toFixed(2);
+                        document.getElementById('modal-total').textContent = parseFloat(p.total).toFixed(2);
                         const tbody = document.getElementById('modal-detalles');
                         tbody.innerHTML = '';
                         p.detalles.forEach(d => {
@@ -260,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             tr.innerHTML = `
                                 <td>${d.producto.nombre}</td>
                                 <td>${d.cantidad}</td>
-                                <td>${parseFloat(d.subtotal).toFixed(2)}</td>`;
+                                <td>$${parseFloat(d.subtotal).toFixed(2)}</td>`;
                             tbody.appendChild(tr);
                         });
                         document.getElementById('btn-editar-pedido').onclick = () => {

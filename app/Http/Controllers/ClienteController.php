@@ -19,16 +19,19 @@ class ClienteController extends Controller
     public function index(Request $request)
     {
         $query = Producto::where('activo', 1)
-            ->with(['categorias' => function ($q) {
-                $q->where('activo', 1);
-            }, 'ingredientes' => function ($q) {
-                $q->where('activo', 1);
-            }]);
+            ->with([
+                'categorias' => function ($q) {
+                    $q->where('activo', 1);
+                },
+                'ingredientes' => function ($q) {
+                    $q->where('activo', 1);
+                }
+            ]);
 
         if ($request->filled('categoria_id')) {
             $query->whereHas('categorias', function ($q) use ($request) {
                 $q->where('categorias.id', $request->categoria_id)
-                  ->where('activo', 1);
+                    ->where('activo', 1);
             });
         }
 
@@ -78,11 +81,13 @@ class ClienteController extends Controller
     {
         $productoId = $request->input('producto_id');
         $quitados = is_array($request->input('quitados')) ? $request->input('quitados') : [];
-        $cantidad = max(1, (int)$request->input('cantidad', 1));
+        $cantidad = max(1, (int) $request->input('cantidad', 1));
 
-        $producto = Producto::with(['ingredientes' => function ($q) {
-            $q->where('activo', 1);
-        }])->findOrFail($productoId);
+        $producto = Producto::with([
+            'ingredientes' => function ($q) {
+                $q->where('activo', 1);
+            }
+        ])->findOrFail($productoId);
 
         // Validar que no se intenten quitar ingredientes obligatorios
         $obligatorios = $producto->ingredientes
@@ -122,7 +127,7 @@ class ClienteController extends Controller
     public function updateCart(Request $request)
     {
         $itemKey = $request->input('item_key');
-        $cantidad = max(1, (int)$request->input('cantidad'));
+        $cantidad = max(1, (int) $request->input('cantidad'));
 
         $carrito = session('carrito', []);
 
@@ -269,5 +274,104 @@ class ClienteController extends Controller
             ->get(['id', 'nombre', 'apellido', 'cedula', 'telefono', 'puntos', 'activo']);
 
         return response()->json($clientes);
+    }
+
+    public function store(Request $request)
+    {
+        // 1) Validación de entrada
+        $data = $request->validate([
+            'cedula' => ['required', 'string', 'max:20', 'unique:clientes,cedula'],
+            'nombre' => ['required', 'string', 'max:50'],
+            'apellido' => ['required', 'string', 'max:50'],
+            'telefono' => ['nullable', 'string', 'max:20'],
+            // Agrega aquí cualquier otro campo necesario (por ejemplo: estado)
+        ]);
+
+        // 2) Creación del cliente
+        $cliente = Cliente::create([
+            'cedula' => $data['cedula'],
+            'nombre' => $data['nombre'],
+            'apellido' => $data['apellido'],
+            'telefono' => $data['telefono'] ?? null,
+            'puntos' => 0,
+            'estado' => 'activo',
+        ]);
+
+        // 3) Retornar JSON de éxito
+        return response()->json([
+            'success' => true,
+            'cliente' => [
+                'id' => $cliente->id,
+                'cedula' => $cliente->cedula,
+                'nombre' => $cliente->nombre,
+                'apellido' => $cliente->apellido,
+                'telefono' => $cliente->telefono,
+                'puntos' => $cliente->puntos,
+                'estado' => $cliente->estado,
+            ],
+        ]);
+    }
+
+    public function obtenerPuntosPorCedula(Request $request)
+    {
+        $request->validate([
+            'cedula' => ['required', 'string', 'max:20'],
+        ]);
+
+        $cedula = $request->input('cedula');
+        $cliente = Cliente::where('cedula', $cedula)->first();
+
+        if (!$cliente) {
+            // Ya no devolvemos 404; regresamos success=false pero HTTP 200.
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró ningún cliente con esa cédula.'
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'cliente' => [
+                'id' => $cliente->id,
+                'cedula' => $cliente->cedula,
+                'nombre' => $cliente->nombre,
+                'apellido' => $cliente->apellido,
+                'telefono' => $cliente->telefono,
+                'puntos' => $cliente->puntos,
+                'estado' => $cliente->estado,
+            ],
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        // 1) Validar que exista el cliente
+        $cliente = Cliente::findOrFail($id);
+
+        // 2) Validar campos de entrada
+        //    (cedula no se puede cambiar aquí, suponemos que es PK lógica)
+        $data = $request->validate([
+            'nombre' => ['required', 'string', 'max:50'],
+            'apellido' => ['required', 'string', 'max:50'],
+            'telefono' => ['nullable', 'string', 'max:20'],
+            // Agrega otros campos editables si fuera necesario
+        ]);
+
+        // 3) Actualizar el cliente
+        $cliente->update($data);
+
+        // 4) Retornar JSON con el cliente actualizado
+        return response()->json([
+            'success' => true,
+            'cliente' => [
+                'id' => $cliente->id,
+                'cedula' => $cliente->cedula,
+                'nombre' => $cliente->nombre,
+                'apellido' => $cliente->apellido,
+                'telefono' => $cliente->telefono,
+                'puntos' => $cliente->puntos,
+                'estado' => $cliente->estado,
+            ],
+        ]);
     }
 }

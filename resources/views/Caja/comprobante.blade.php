@@ -38,11 +38,10 @@
 
         <hr style="border-top:1px dashed #000; margin:10px 0;">
 
-        @if ($pedido->puntoPedido && $pedido->puntoPedido->cliente)
+        {{-- Mostrar siempre el cliente asociado si existe --}}
+        @if ($pedido->cliente)
             @php
-                $cliente = $pedido->puntoPedido->cliente;
-                $puntosGenerados = $pedido->puntoPedido->cantidad;
-                $puntosTotales = $cliente->puntos;
+                $cliente = $pedido->cliente;
             @endphp
 
             <p>
@@ -51,15 +50,28 @@
                 Nombre: {{ $cliente->nombre }} {{ $cliente->apellido }}
             </p>
             <hr style="border-top:1px dashed #000; margin:10px 0;">
-            <p>
-                <strong>Puntos generados:</strong> {{ $puntosGenerados }}
-            </p>
-            <p>
-                <strong>Puntos totales:</strong> {{ $puntosTotales }}
-            </p>
-            <hr style="border-top:1px dashed #000; margin:10px 0;">
+
+            {{-- Si ya se generaron puntos (cuando el pedido fue marcado como Entregado) --}}
+            @if ($pedido->puntoPedido)
+                @php
+                    $puntosGenerados = $pedido->puntoPedido->cantidad;
+                    $puntosTotales = $cliente->puntos;
+                @endphp
+
+                <p>
+                    <strong>Puntos generados:</strong> {{ $puntosGenerados }}
+                </p>
+                <p>
+                    <strong>Puntos totales:</strong> {{ $puntosTotales }}
+                </p>
+                <hr style="border-top:1px dashed #000; margin:10px 0;">
+            @else
+                <p><em>Muchas gracias por su compra</em></p>
+                <hr style="border-top:1px dashed #000; margin:10px 0;">
+            @endif
+
         @else
-            <p><em>Cliente: Sin cliente asociado</em></p>
+            <p><em>Muchas gracias por su compra</em></p>
             <hr style="border-top:1px dashed #000; margin:10px 0;">
         @endif
 
@@ -76,13 +88,14 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             JsBarcode("#barcode", "{{ $pedido->codigo }}", {
-                format: "CODE128", width: 2, height: 50, displayValue: false
+                format: "CODE128",
+                width: 2,
+                height: 50,
+                displayValue: false
             });
             window.print();
         });
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('btn-imprimir-comprobante')
-                .addEventListener('click', () => window.print());
-        });
+        document.getElementById('btn-imprimir-comprobante')
+            .addEventListener('click', () => window.print());
     </script>
 @endsection

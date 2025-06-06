@@ -1,6 +1,7 @@
 <?php
 namespace Database\Seeders;
 
+use App\Models\Cliente;
 use Illuminate\Database\Seeder;
 use App\Models\Pedido;
 use App\Models\Usuario;
@@ -13,6 +14,8 @@ class PedidoSeeder extends Seeder
     {
         // Tomamos solo usuarios que sean Cajero (o Administrador, si te interesa)
         $cajeros = Usuario::whereIn('rol', ['Cajero', 'Administrador'])->get();
+        // 2) Obtener todos los clientes disponibles
+        $clientes = Cliente::all();
 
         if ($cajeros->isEmpty()) {
             return;
@@ -25,9 +28,14 @@ class PedidoSeeder extends Seeder
                 $metodoPago = fake()->randomElement(['Efectivo', 'Tarjeta']);
                 // Generamos una fecha aleatoria dentro de los últimos 30 días
                 $fecha = Carbon::now()->subDays(rand(0, 30))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
+                
+                $clienteId = $clientes->isNotEmpty()
+                    ? $clientes->random()->id
+                    : null;
 
                 Pedido::create([
                     'usuario_id' => $cajero->id,               // ahora asocia al cajero que genera el pedido
+                    'cliente_id' => $clienteId,
                     'total' => 0,                         // se actualizará luego cuando crees DetallePedido
                     'metodo_pago' => $metodoPago,
                     'estado' => $estado,
