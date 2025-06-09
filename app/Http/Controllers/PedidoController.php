@@ -8,11 +8,13 @@ use App\Models\Producto;
 use App\Models\Pago;
 use App\Models\Cliente;
 use App\Models\PuntoPedido;
+use App\Models\ReglaPunto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class PedidoController extends Controller
 {
@@ -161,61 +163,63 @@ class PedidoController extends Controller
     public function cambiarEstado(Request $request, $id)
     {
 
-        \Log::debug("---- llegar a cambiarEstado() para pedido: $id ----");
-        \Log::debug("Payload recibo:", $request->all());
-
         $data = $request->validate([
             'estado' => 'required|in:Cancelado,Recibido,En Preparacion,Listo,Entregado'
         ]);
 
         $pedido = Pedido::findOrFail($id);
-        \Log::debug("Pedido antes de cambiar estado:", [
-            'estado_actual' => $pedido->estado,
-            'cliente_id' => $pedido->cliente_id,
-            'total' => $pedido->total,
-        ]);
         $pedido->estado = $data['estado'];
         $pedido->save();
 
         // Si acaban de marcarlo como "Entregado", generamos puntos
         if ($data['estado'] === 'Entregado' && $pedido->cliente_id) {
-            // 1) Evitar duplicar puntos si ya existe un PuntoPedido para este pedido
-            $existe = PuntoPedido::where('pedido_id', $pedido->id)->exists();
-            \Log::debug("¿Ya existe PuntoPedido para este pedido? ", ['existe' => $existe]);
-            if (!$existe) {
-                // 2) Calcular puntos: 1 punto por cada $10 de total, mínimo 10, máximo 100
-                $total = $pedido->total;
-                $puntosAGenerar = floor($total / 10);
-                $puntosAGenerar = max(10, min($puntosAGenerar, 100));
-                \Log::debug("Calculando puntos para cliente {$pedido->cliente_id}: $puntosAGenerar");
+            Log::debug("Pedido {$pedido->id}: cambiando a Entregado; total = {$pedido->total}; cliente_id = {$pedido->cliente_id}");
 
-                // 3) Crear registro en punto_pedido
+            // 1) Evitar duplicar puntos
+            $existe = PuntoPedido::where('pedido_id', $pedido->id)->exists();
+            Log::debug("Pedido {$pedido->id}: existe PuntoPedido? " . ($existe ? 'sí' : 'no'));
+
+            if (!$existe) {
+                // 2) Buscar tramo
+                $total = (float) $pedido->total;
+                $regla = ReglaPunto::where('monto_min', '<=', $total)
+                    ->where('monto_max', '>=', $total)
+                    ->first();
+
+                if (!$regla) {
+                    Log::debug("Pedido {$pedido->id}: no se encontró tramo para total {$total}");
+                } else {
+                    Log::debug("Pedido {$pedido->id}: tramo encontrado id={$regla->id} rango={$regla->monto_min}-{$regla->monto_max}, puntos_base={$regla->puntos_base}");
+                }
+
+                // 3) Determinar puntos
+                $puntosAGenerar = $regla ? $regla->puntos_base : 1;
+                Log::debug("Pedido {$pedido->id}: puntos a generar = {$puntosAGenerar}");
+
+                // 4) Crear registro de puntos
                 PuntoPedido::create([
                     'cliente_id' => $pedido->cliente_id,
                     'pedido_id' => $pedido->id,
                     'cantidad' => $puntosAGenerar,
-                    'tipo' => 'Canjeo', // o el tipo que uses
+                    'tipo' => 'Canjeo',
                     'fecha' => now(),
                 ]);
-                \Log::debug("PuntoPedido creado para el pedido {$pedido->id}");
+                Log::debug("Pedido {$pedido->id}: PuntoPedido creado");
 
-                // 4) Actualizar total de puntos en el cliente
+                // 5) Actualizar puntos en cliente
                 $cliente = Cliente::find($pedido->cliente_id);
                 if ($cliente) {
-                    $cliente->puntos += $puntosAGenerar;
-                    $cliente->save();
-                    \Log::debug("Cliente {$cliente->id} actualizado puntos a: {$cliente->puntos}");
+                    $cliente->increment('puntos', $puntosAGenerar);
+                    Log::debug("Cliente {$cliente->id}: puntos actualizados a {$cliente->puntos}");
                 } else {
-                    \Log::debug("No se encontró cliente con ID {$pedido->cliente_id}");
+                    Log::debug("Cliente {$pedido->cliente_id} no encontrado");
                 }
-            } else {
-                \Log::debug("No se genera puntos: existe=$existe o cliente_id vacío");
             }
         }
 
         return response()->json([
             'success' => true,
-            'nuevo_estado' => $pedido->estado
+            'nuevo_estado' => $pedido->estado,
         ]);
     }
 

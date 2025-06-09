@@ -64,7 +64,8 @@
             {{-- Promociones --}}
             <div class="col-md-4 col-lg-3">
                 <div class="card border-0 shadow h-100 hover-scale rounded-4">
-                <img src="https://tse4.mm.bing.net/th?id=OIP.lLzadlgvfORpqjxs5znF2gHaHa&pid=Api" class="card-img-top p-4" alt="Promociones">
+                    <img src="https://tse4.mm.bing.net/th?id=OIP.lLzadlgvfORpqjxs5znF2gHaHa&pid=Api"
+                        class="card-img-top p-4" alt="Promociones">
                     <div class="card-body text-center">
                         <h5 class="card-title fw-semibold">Promociones</h5>
                         <a href="{{ route('promociones.index') }}"
@@ -84,6 +85,21 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Reglas de Puntos --}}
+            <div class="col-md-4 col-lg-3">
+                <div class="card border-0 shadow h-100 hover-scale rounded-4">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1077/1077012.png" class="card-img-top p-4"
+                        alt="Reglas de Puntos">
+                    <div class="card-body text-center">
+                        <h5 class="card-title fw-semibold">Reglas de Puntos</h5>
+                        <a href="{{ route('reglas-puntos.index') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                            Gestionar
+                        </a>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 @endsection

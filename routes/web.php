@@ -90,6 +90,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/administrador/promociones/{promo}/productos', [PromocionController::class, 'productos'])
             ->name('promociones.productos');
 
+
+        // CRUD de reglas de puntos
+        Route::resource('/administrador/reglas-puntos', App\Http\Controllers\ReglaPuntoController::class)
+            ->names('reglas-puntos');
         // Resource de PROMOCIONES
         Route::resource('/administrador/promociones', PromocionController::class);
     });

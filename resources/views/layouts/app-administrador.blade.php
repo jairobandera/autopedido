@@ -11,7 +11,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        html, body {
+        html,
+        body {
             height: 100%;
         }
 
@@ -54,10 +55,13 @@
                     <li class="nav-item"><a href="/administrador/dashboard" class="nav-link">Inicio</a></li>
                     <li class="nav-item"><a href="{{ route('productos.index') }}" class="nav-link">Productos</a></li>
                     <li class="nav-item"><a href="{{ route('categorias.index') }}" class="nav-link">Categorías</a></li>
-                    <li class="nav-item"><a href="{{ route('promociones.index') }}" class="nav-link">Promociones</a></li>
-                    <li class="nav-item"><a href="{{ route('ingredientes.index') }}" class="nav-link">Ingredientes</a></li>
+                    <li class="nav-item"><a href="{{ route('promociones.index') }}" class="nav-link">Promociones</a>
+                    </li>
+                    <li class="nav-item"><a href="{{ route('ingredientes.index') }}" class="nav-link">Ingredientes</a>
+                    </li>
                     <li class="nav-item"><a href="{{ route('usuarios.index') }}" class="nav-link">Usuarios</a></li>
                     <li class="nav-item"><a href="#" class="nav-link">Gráficas</a></li>
+                    <li class="nav-item"><a href="{{ route('reglas-puntos.index') }}" class="nav-link">Puntos</a></li>
                     <ul class="navbar-nav ms-3">
                         <li class="nav-item">
                             <form action="{{ route('logout') }}" method="POST">
@@ -82,9 +86,9 @@
             <p class="mb-0">&copy; {{ date('Y') }} Eatsy - Panel de Administración</p>
         </div>
     </footer>
-        <!-- Bootstrap JS (Popper + JS) -->
+    <!-- Bootstrap JS (Popper + JS) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     @yield('scripts')
 
 </body>
