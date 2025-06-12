@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use App\Events\PedidoCreado;
 
 class ClienteController extends Controller
 {
@@ -252,6 +253,8 @@ class ClienteController extends Controller
         // Limpiar el carrito
         session()->forget('carrito');
 
+        event(new PedidoCreado($pedido));
+
         return response()->json([
             'success' => true,
             'message' => 'Pedido creado exitosamente.',
@@ -374,4 +377,44 @@ class ClienteController extends Controller
             ],
         ]);
     }
+
+    public function llamado()
+    {
+        // Fecha de hoy en Montevideo
+        $hoy = Carbon::now('America/Montevideo')->toDateString();
+
+        $pedidos = Pedido::with('cliente')
+            ->where('estado', 'Entregado')
+            ->whereDate('updated_at', $hoy)        // ← sólo hoy
+            ->orderBy('updated_at', 'desc')
+            ->get();                               // ya no necesitas take(5)
+
+        return view('Cliente.llamado', compact('pedidos'));
+    }
+
+    // app/Http/Controllers/ClienteController.php
+
+    public function showPublic(Pedido $pedido)
+    {
+        // Solo si ya está Entregado (opcional):
+        if ($pedido->estado !== 'Entregado') {
+            abort(404);
+        }
+
+        // Carga la relación cliente (puede ser null)
+        $pedido->load('cliente');
+
+        // Devuelve JSON público
+        return response()->json([
+            'id' => $pedido->id,
+            'codigo' => $pedido->codigo,
+            'updated_at' => $pedido->updated_at,
+            'cliente' => $pedido->cliente ? [
+                'nombre' => $pedido->cliente->nombre,
+                'apellido' => $pedido->cliente->apellido,
+                'cedula' => $pedido->cliente->cedula,
+            ] : null,
+        ]);
+    }
+
 }

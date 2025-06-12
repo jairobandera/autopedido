@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PedidoEstadoActualizado;
 use App\Models\Pedido;
 use Illuminate\Http\Request;
 
@@ -21,10 +22,12 @@ class CocinaController extends Controller
         return view('Cocina.dashboard', compact('pedidos'));
     }
 
-    public function marcarListo(Pedido $pedido)
+    public function marcarListo(Request $request, Pedido $pedido)
     {
         $pedido->estado = 'Listo';
         $pedido->save();
+
+        event(new PedidoEstadoActualizado($pedido));
 
         return response()->json([
             'success' => true,
@@ -46,5 +49,12 @@ class CocinaController extends Controller
 
         return response()->json($pedidos);
     }
+
+    public function show(Pedido $pedido)
+    {
+        $pedido->load('detalles.producto', 'detalles.ingredientesQuitados');
+        return response()->json($pedido);
+    }
+
 
 }

@@ -323,17 +323,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 12) Función para enviar pedido nuevo vía AJAX
     function enviarPedido(clienteId) {
-        // Leemos la ruta (route) desde un atributo data- en el Blade
-        const storeUrl = document
-            .getElementById('store-pedido-url')
-            .getAttribute('data-url');
+        // 1) Debug: lista todos los IDs que hay en el DOM
+        console.log('Elementos con ID store-pedido-url y dashboard-pedidos-url:',
+            document.getElementById('store-pedido-url'),
+            document.getElementById('dashboard-pedidos-url')
+        );
 
-        const dashboardUrl = document
-            .getElementById('dashboard-pedidos-url')
-            .getAttribute('data-url');
+        // 2) Obtener con seguridad la URL de store
+        const storeDiv = document.getElementById('store-pedido-url');
+        if (!storeDiv) {
+            console.error('Envío: No encontré el div #store-pedido-url');
+            return;
+        }
+        const storeUrl = storeDiv.getAttribute('data-url');
 
+        // 3) Obtener con seguridad la URL de dashboard
+        const dashDiv = document.getElementById('dashboard-pedidos-url');
+        if (!dashDiv) {
+            console.error('Envío: No encontré el div #dashboard-pedidos-url');
+            return;
+        }
+        const dashboardUrl = dashDiv.getAttribute('data-url');
+
+        // 4) Construir payload
         const metodo = document.getElementById('metodo-pago-global').value;
-
         const payload = {
             cliente_id: clienteId,
             items: carrito.map(item => ({
@@ -344,19 +357,26 @@ document.addEventListener('DOMContentLoaded', () => {
             metodo_pago: metodo
         };
         console.log('→ PAYLOAD a enviar a store():', payload);
+        console.log(
+            'storeDiv →', document.getElementById('store-pedido-url'),
+            'dashDiv →', document.getElementById('dashboard-pedidos-url')
+        );
 
+        // 5) Enviar fetch
         fetch(storeUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document
-                    .querySelector('meta[name="csrf-token"]')
-                    .getAttribute('content')
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
             body: JSON.stringify(payload)
         })
-            .then(r => r.json())
+            .then(r => {
+                console.log('Respuesta raw del servidor:', r);
+                return r.json();
+            })
             .then(json => {
+                console.log('JSON recibido al crear pedido:', json);
                 if (!json.success) {
                     return Swal.fire('Error', json.error || 'Algo salió mal.', 'error');
                 }
@@ -365,14 +385,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     title: 'Pedido Creado',
                     text: `Código: ${json.codigo}`
                 }).then(() => {
-                    document.getElementById('modal-codigo-nuevo').textContent =
-                        json.codigo;
+                    document.getElementById('modal-codigo-nuevo').textContent = json.codigo;
                     modalEl.setAttribute('data-pedido-id', json.pedido_id);
                     modal.show();
                 });
             })
             .catch(err => {
-                console.error(err);
+                console.error('Error en fetch de crear pedido:', err);
                 Swal.fire('Error', 'Error al crear pedido.', 'error');
             });
     }

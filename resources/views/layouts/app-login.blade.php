@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>@yield('title', 'Login') - Autopedido</title>
+    <title>@yield('title', 'Login') - Eatsy</title>
+    <link rel="shortcut icon" href="{{ asset('images/icono.ico') }}" type="image/x-icon">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Bootstrap y SweetAlert -->

@@ -4,7 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <title>@yield('title', 'Caja') - Eatsy</title>
+    <link rel="shortcut icon" href="{{ asset('images/icono.ico') }}" type="image/x-icon">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script>
+        //window.cocinaBaseUrl = "{{ url('/cocina/pedidos') }}"; // para el PATCH
+        window.cocinaBaseUrl = "{{ route('Cocina.dashboard') }}".replace('/dashboard', '');
+        window.baseShowUrl = "{{ url('/caja/pedidos') }}";   // para el GET
+        window.csrfToken = "{{ csrf_token() }}";
+        console.log('Cocina BASE URL ➔', window.baseCocinaUrl);
+        console.log('BASE SHOW URL ➔', window.baseShowUrl);
+    </script>
+    @vite('resources/js/cocinaWebSocket/dashboard.js')
 
     <!-- Bootstrap + SweetAlert -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">

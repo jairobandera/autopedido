@@ -1,3 +1,5 @@
+<link rel="shortcut icon" href="{{ asset('images/icono.ico') }}" type="image/x-icon">
+
 <x-guest-layout>
     <div class="text-center mb-4">
         <img src="{{ asset('images/logo.png') }}" alt="Mi Logo" class="w-32 mx-auto" width="150px">

@@ -108,7 +108,7 @@
                         .then(res => res.ok ? res.json() : Promise.reject(res.status))
                         .then(p => {
                             document.getElementById('modal-codigo').textContent = p.codigo;
-                            document.getElementById('modal-total').textContent = p.total.toFixed(2);
+                            document.getElementById('modal-total').textContent = parseFloat(p.total).toFixed(2);
                             const tbody = document.getElementById('modal-detalles');
                             tbody.innerHTML = '';
                             p.detalles.forEach(d => {

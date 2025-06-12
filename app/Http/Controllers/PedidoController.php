@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PedidoEstadoActualizado;
 use App\Models\Pedido;
 use App\Models\DetallePedido;
 use App\Models\Producto;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use App\Events\PedidoCreado;
 
 class PedidoController extends Controller
 {
@@ -127,6 +129,9 @@ class PedidoController extends Controller
 
             DB::commit();
 
+            // Disparamos el evento ANTES del return
+            event(new PedidoCreado($pedido));
+
             return response()->json([
                 'success' => true,
                 'pedido_id' => $pedido->id,
@@ -160,43 +165,35 @@ class PedidoController extends Controller
         ]);
     }
 
-    public function cambiarEstado(Request $request, $id)
+    public function cambiarEstado(Request $request, Pedido $pedido)
     {
-
         $data = $request->validate([
             'estado' => 'required|in:Cancelado,Recibido,En Preparacion,Listo,Entregado'
         ]);
 
-        $pedido = Pedido::findOrFail($id);
+        // 1) Actualizar el estado
         $pedido->estado = $data['estado'];
         $pedido->save();
 
-        // Si acaban de marcarlo como "Entregado", generamos puntos
+        // 2) Si acaban de marcarlo como "Entregado", generamos puntos
         if ($data['estado'] === 'Entregado' && $pedido->cliente_id) {
             Log::debug("Pedido {$pedido->id}: cambiando a Entregado; total = {$pedido->total}; cliente_id = {$pedido->cliente_id}");
 
-            // 1) Evitar duplicar puntos
+            // Evitar duplicar puntos
             $existe = PuntoPedido::where('pedido_id', $pedido->id)->exists();
             Log::debug("Pedido {$pedido->id}: existe PuntoPedido? " . ($existe ? 'sí' : 'no'));
 
             if (!$existe) {
-                // 2) Buscar tramo
+                // Buscar tramo
                 $total = (float) $pedido->total;
                 $regla = ReglaPunto::where('monto_min', '<=', $total)
                     ->where('monto_max', '>=', $total)
                     ->first();
 
-                if (!$regla) {
-                    Log::debug("Pedido {$pedido->id}: no se encontró tramo para total {$total}");
-                } else {
-                    Log::debug("Pedido {$pedido->id}: tramo encontrado id={$regla->id} rango={$regla->monto_min}-{$regla->monto_max}, puntos_base={$regla->puntos_base}");
-                }
-
-                // 3) Determinar puntos
                 $puntosAGenerar = $regla ? $regla->puntos_base : 1;
                 Log::debug("Pedido {$pedido->id}: puntos a generar = {$puntosAGenerar}");
 
-                // 4) Crear registro de puntos
+                // Crear registro de puntos
                 PuntoPedido::create([
                     'cliente_id' => $pedido->cliente_id,
                     'pedido_id' => $pedido->id,
@@ -206,7 +203,7 @@ class PedidoController extends Controller
                 ]);
                 Log::debug("Pedido {$pedido->id}: PuntoPedido creado");
 
-                // 5) Actualizar puntos en cliente
+                // Actualizar puntos en cliente
                 $cliente = Cliente::find($pedido->cliente_id);
                 if ($cliente) {
                     $cliente->increment('puntos', $puntosAGenerar);
@@ -217,11 +214,16 @@ class PedidoController extends Controller
             }
         }
 
+        // 3) Emitir el evento UNA VEZ que todo está procesado
+        event(new PedidoEstadoActualizado($pedido));
+
+        // 4) Responder al frontend
         return response()->json([
             'success' => true,
             'nuevo_estado' => $pedido->estado,
         ]);
     }
+
 
     public function entregados()
     {
@@ -409,4 +411,14 @@ class PedidoController extends Controller
 
         return view('Caja.comprobante', compact('pedido'));
     }
+
+    public function fila(Pedido $pedido)
+    {
+        // Carga relaciones que uses en la vista (cliente, pago, etc.)
+        $pedido->load('cliente', 'pago');
+
+        // Devuelve un fragmento <tr>…</tr> renderizado con tu parcial Blade
+        return view('caja.partials.pedido_row', compact('pedido'));
+    }
+
 }

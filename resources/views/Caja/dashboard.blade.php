@@ -1,21 +1,32 @@
 @extends('layouts.app-caja')
 
 @section('title', 'Dashboard Cajero')
+<script>
+    window.baseShowUrl = "{{ url('/caja/pedidos') }}";
+    window.basePagoUrl = "{{ url('/caja/pagos') }}";
+    window.csrfToken = "{{ csrf_token() }}";
+     console.log('Injected BASE URL ➔', window.baseShowUrl);
+</script>
+@vite('resources/js/cajaWebSocket/dashboard.js')
 
 @section('content')
-
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Dashboard – Caja</h2>
-            <div class="d-flex gap-2">
-                <a href="{{ route('caja.pedidos.entregados') }}"
-                class="btn btn-secondary btn-lg">
+        <div class="d-flex gap-2">
+            <a href="{{ route('caja.pedidos.entregados') }}"
+            class="btn btn-secondary btn-lg">
                 <i class="bi bi-truck"></i> Ver Entregados
-                </a>
-                <a href="{{ route('caja.pedidos.create') }}"
-                class="btn btn-primary btn-lg">
+            </a>
+            <a href="{{ url('/cliente/llamados') }}"
+            class="btn btn-info btn-lg"
+            target="_blank">
+                <i class="bi bi-people"></i> Llamados Cliente
+            </a>
+            <a href="{{ route('caja.pedidos.create') }}"
+            class="btn btn-primary btn-lg">
                 <i class="bi bi-plus-lg"></i> Nuevo Pedido
-                </a>
-            </div>
+            </a>
+        </div>
     </div>
 
     <form method="GET" class="mb-3">
@@ -35,11 +46,9 @@
         </div>
     </form>
 
-
-
     {{-- Tabla de pedidos --}}
     <div class="table-responsive">
-        <table class="table table-hover align-middle text-center">
+        <table  id="tablaPedidos" class="table table-hover align-middle text-center">
             <thead class="table-dark">
                 <tr>
                     <th>ID</th>
@@ -54,7 +63,7 @@
             </thead>
             <tbody>
                 @foreach($pedidos as $pedido)
-                    <tr>
+                    <tr class="pedido-card" data-id="{{ $pedido->id }}">
                         <td>{{ $pedido->id }}</td>
                         <td>
                             <span class="badge bg-{{ $pedido->usuario->rol === 'Cajero' ? 'info' : 'secondary' }}">
@@ -166,12 +175,13 @@
 
     <audio id="new-order-sound" src="{{ asset('sounds/bell.mp3') }}" preload="auto"></audio>
     <button style="display:none;" id="btn-test-sound" class="btn btn-sm btn-outline-secondary mt-2">
-    </button>
+    </button>   
+
 @endsection
 
 @section('scripts')
-    <script>
-document.addEventListener('DOMContentLoaded', () => {
+<script>
+            document.addEventListener('DOMContentLoaded', () => {
             const baseShowUrl     = "{{ url('/caja/pedidos') }}";
             const sound           = document.getElementById('new-order-sound');
             const checkUrl        = "{{ route('caja.pedidos.latest') }}";
@@ -210,37 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Poll cada 8s
-            setInterval(() => {
-                console.log(`🔄 Comprobando nuevos pedidos (lastId=${lastId}, lastTS=${lastTimestamp.toISOString()})`);
-
-                fetch(checkUrl, {
-                    headers: { 'Accept': 'application/json' },
-                    credentials: 'same-origin'
-                })
-                .then(r => r.json())
-                .then(json => {
-                    const serverId = json.id;
-                    const serverTS = json.created_at ? new Date(json.created_at) : null;
-
-                    // Sólo si es más alto y más reciente
-                    if (serverId > lastId && serverTS && serverTS > lastTimestamp) {
-                        lastId        = serverId;
-                        lastTimestamp = serverTS;
-
-                        if (userHasInteracted) {
-                            sound.currentTime = 0;
-                            sound.play()
-                                .then(() => {
-                                    sound.addEventListener('ended', () => location.reload(), { once: true });
-                                })
-                                .catch(() => location.reload());
-                        } else {
-                            location.reload();
-                        }
-                    }
-                })
-                .catch(err => console.error('Error comprobando latest:', err));
-            }, 8000);
+            
             // Ver Pedido (igual que antes)...
             document.querySelectorAll('.btn-ver').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -291,7 +271,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 cancelButtonText: 'Cancelar'
                 }).then(({ isConfirmed }) => {
                 if (!isConfirmed) return;
-                fetch(`${baseShowUrl}/${id}/estado`, {
+                console.log('BASE URL ➔', baseShowUrl);
+                console.log('FULL PATCH URL ➔', `${baseShowUrl}/${id}/estado`);
+                fetch(`${window.baseShowUrl}/${id}/estado`, {
                     method: 'PATCH',
                     credentials: 'same-origin',
                     headers: {
@@ -327,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             });
 
-
             // Select genérico de estado (igual que antes)...
             document.querySelectorAll('.estado-cambio').forEach(sel => {
                 sel.addEventListener('change', () => {
@@ -342,7 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         cancelButtonText: 'No'
                     }).then(({ isConfirmed }) => {
                         if (!isConfirmed) {
-                            sel.value = sel.getAttribute('data-original');
+                            const original = sel.getAttribute('data-original');
+                            sel.value = original;
                             return;
                         }
                         fetch(`${baseShowUrl}/${id}/estado`, {
@@ -457,5 +439,5 @@ document.addEventListener('DOMContentLoaded', () => {
         </script>
         @endif
 
-    </script>
+</script>
 @endsection

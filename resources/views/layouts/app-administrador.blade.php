@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>@yield('title', 'Administrador') - Eatsy</title>
+    <link rel="shortcut icon" href="{{ asset('images/icono.ico') }}" type="image/x-icon">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Bootstrap + SweetAlert -->

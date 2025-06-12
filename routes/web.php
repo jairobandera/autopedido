@@ -104,8 +104,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/caja/dashboard', [PedidoController::class, 'index'])
             ->name('Caja.dashboard');
 
-        //Ultimo Pedido
-        // routes/web.php
+        Route::patch(
+            '/caja/pedidos/{pedido}/estado',
+            [PedidoController::class, 'cambiarEstado']
+        )->name('caja.pedidos.estado');
+        Route::get('caja/pedidos/{pedido}/fila', [PedidoController::class, 'fila'])
+            ->name('caja.pedidos.fila');
         Route::get('/caja/pedidos/latest', [PedidoController::class, 'latest'])
             ->name('caja.pedidos.latest')
             ->middleware('auth', 'cajero');
@@ -118,6 +122,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/caja/pedidos/{id}/edit', [PedidoController::class, 'edit'])
             ->name('caja.pedidos.edit');
         // Actualizar pedido
+        Route::get('/caja/pedidos/{id}', [PedidoController::class, 'show'])
+            ->name('caja.pedidos.show');
         Route::patch('/caja/pedidos/{id}', [PedidoController::class, 'update'])
             ->name('caja.pedidos.update');
         Route::get('/caja/productos/{id}', [PedidoController::class, 'detalleProducto'])
@@ -126,11 +132,8 @@ Route::middleware('auth')->group(function () {
             ->name('caja.productos.index');                                                  //detalle de un producto:
         Route::post('/caja/pedidos', [PedidoController::class, 'store'])
             ->name('caja.pedidos.store');
-        Route::get('/caja/pedidos/{id}', [PedidoController::class, 'show'])
-            ->name('caja.pedidos.show');
         // Marca un pedido como 'Entregado' o el estado que necesites
-        Route::patch('/caja/pedidos/{id}/estado', [PedidoController::class, 'cambiarEstado'])
-            ->name('caja.pedidos.estado');
+        // Route::patch('/caja/pedidos/{id}/estado', [PedidoController::class, 'cambiarEstado'])->name('caja.pedidos.estado');
         Route::patch('/caja/pagos/{pago}/estado', [PedidoController::class, 'cambiarPagoEstado'])
             ->name('caja.pagos.estado');
         Route::get('/caja/pedidos/{pedido}/comprobante', [PedidoController::class, 'comprobante'])
@@ -171,6 +174,10 @@ Route::middleware('auth')->group(function () {
             ->name('cocina.pedidos.estado');
         Route::get('/cocina/pedidos/nuevos', [CocinaController::class, 'nuevos'])
             ->name('cocina.pedidos.nuevos');
+        Route::patch('cocina/pedidos/{pedido}/estado', [CocinaController::class, 'marcarListo']);
+        Route::get('/cocina/pedidos/{pedido}', [CocinaController::class, 'show'])
+            ->name('cocina.pedidos.show');
+
     });
 
     // 🔹 Rutas protegidas para cliente (verificar rol)
@@ -186,3 +193,9 @@ Route::middleware('auth')->group(function () {
     // 🔹 Rutas de logout
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
+
+// Esto queda fuera de cualquier middleware de auth
+Route::get('/cliente/llamados', [ClienteController::class, 'llamado'])->name('cliente.llamado');
+Route::get('/cliente/pedidos/{pedido}', [ClienteController::class, 'showPublic'])
+    ->name('cliente.pedidos.showPublic');
+
