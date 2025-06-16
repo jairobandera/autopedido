@@ -263,5 +263,4 @@ document.addEventListener('DOMContentLoaded', () => {
                 timer: 2000
             });
         });
-
 });

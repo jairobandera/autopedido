@@ -290,11 +290,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
     // ————————————
-    // Finalizar o reenviar pedido
+    // 11) Finalizar o reenviar pedido
     // ————————————
+    const btnFinalizar = document.getElementById('btn-finalizar');
 
-    // 11) Finalizar pedido
-    document.getElementById('btn-finalizar').addEventListener('click', () => {
+    btnFinalizar.addEventListener('click', () => {
         Swal.fire({
             icon: 'question',
             title: 'Confirmar entrega',
@@ -303,8 +303,23 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmButtonText: 'Entregar Pedido',
             cancelButtonText: 'Cancelar'
         }).then(result => {
-            if (!result.isConfirmed) return;
+            if (!result.isConfirmed) {
+                return; // usuario canceló, no hacer nada
+            }
 
+            // 1) Deshabilitamos YA el botón para evitar repeticiones
+            btnFinalizar.disabled = true;
+
+            // 2) Función interna para continuar con AJAX
+            const proceed = clienteId => {
+                enviarPedido(clienteId)
+                    .catch(() => {
+                        // En caso de error, re-habilitamos el botón
+                        btnFinalizar.disabled = false;
+                    });
+            };
+
+            // 3) Si no hay cliente asociado, preguntamos de nuevo
             if (!window.clienteSeleccionado) {
                 Swal.fire({
                     icon: 'question',
@@ -313,39 +328,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     confirmButtonText: 'Sí',
                     cancelButtonText: 'No'
                 }).then(res => {
-                    if (res.isConfirmed) enviarPedido(null);
+                    if (res.isConfirmed) {
+                        proceed(null);
+                    } else {
+                        // canceló: re-habilitamos
+                        btnFinalizar.disabled = false;
+                    }
                 });
             } else {
-                enviarPedido(window.clienteSeleccionado);
+                // Ya hay cliente, procedemos directamente
+                proceed(window.clienteSeleccionado);
             }
         });
     });
 
+    // ————————————
     // 12) Función para enviar pedido nuevo vía AJAX
+    // ————————————
     function enviarPedido(clienteId) {
-        // 1) Debug: lista todos los IDs que hay en el DOM
-        console.log('Elementos con ID store-pedido-url y dashboard-pedidos-url:',
-            document.getElementById('store-pedido-url'),
-            document.getElementById('dashboard-pedidos-url')
-        );
-
-        // 2) Obtener con seguridad la URL de store
+        // 1) Obtener URL de store con seguridad
         const storeDiv = document.getElementById('store-pedido-url');
         if (!storeDiv) {
-            console.error('Envío: No encontré el div #store-pedido-url');
-            return;
+            console.error('No encontré el div #store-pedido-url');
+            return Promise.reject();
         }
         const storeUrl = storeDiv.getAttribute('data-url');
 
-        // 3) Obtener con seguridad la URL de dashboard
+        // 2) Obtener URL de dashboard (por si la necesitaras)
         const dashDiv = document.getElementById('dashboard-pedidos-url');
         if (!dashDiv) {
-            console.error('Envío: No encontré el div #dashboard-pedidos-url');
-            return;
+            console.error('No encontré el div #dashboard-pedidos-url');
+            return Promise.reject();
         }
         const dashboardUrl = dashDiv.getAttribute('data-url');
 
-        // 4) Construir payload
+        // 3) Construir payload
         const metodo = document.getElementById('metodo-pago-global').value;
         const payload = {
             cliente_id: clienteId,
@@ -357,44 +374,42 @@ document.addEventListener('DOMContentLoaded', () => {
             metodo_pago: metodo
         };
         console.log('→ PAYLOAD a enviar a store():', payload);
-        console.log(
-            'storeDiv →', document.getElementById('store-pedido-url'),
-            'dashDiv →', document.getElementById('dashboard-pedidos-url')
-        );
 
-        // 5) Enviar fetch
-        fetch(storeUrl, {
+        // 4) Enviar fetch
+        return fetch(storeUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content')
             },
             body: JSON.stringify(payload)
         })
-            .then(r => {
-                console.log('Respuesta raw del servidor:', r);
-                return r.json();
-            })
-            .then(json => {
-                console.log('JSON recibido al crear pedido:', json);
-                if (!json.success) {
-                    return Swal.fire('Error', json.error || 'Algo salió mal.', 'error');
+            .then(r => r.json().then(json => ({ status: r.status, json })))
+            .then(({ status, json }) => {
+                if (status !== 200 || !json.success) {
+                    throw new Error(json.error || 'Algo salió mal.');
                 }
-                Swal.fire({
+                return Swal.fire({
                     icon: 'success',
                     title: 'Pedido Creado',
                     text: `Código: ${json.codigo}`
                 }).then(() => {
+                    // Mostrar modal con el código generado
                     document.getElementById('modal-codigo-nuevo').textContent = json.codigo;
                     modalEl.setAttribute('data-pedido-id', json.pedido_id);
                     modal.show();
                 });
             })
             .catch(err => {
-                console.error('Error en fetch de crear pedido:', err);
-                Swal.fire('Error', 'Error al crear pedido.', 'error');
+                console.error('Error al crear pedido:', err);
+                Swal.fire('Error', err.message || 'Error al crear pedido.', 'error');
+                // Re-habilitar para reintentar
+                throw err;
             });
     }
+
 
     // 13) Botón “Ver Pedidos” → redirigir
     document

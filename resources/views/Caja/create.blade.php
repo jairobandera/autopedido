@@ -307,9 +307,6 @@
         </div>
     </div>
 
-
-
-
     {{-- Mostrar cliente seleccionado o “Sin cliente” --}}
     <div id="cliente-seleccionado" class="mb-3">
         Cliente: <span id="nombre-cliente">Sin cliente</span>

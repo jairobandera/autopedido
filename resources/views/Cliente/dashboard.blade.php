@@ -244,11 +244,11 @@
                                         <i class="fas fa-money-bill-wave text-2xl mb-2"></i>
                                         <span x-text="loadingPago && metodoPago === 'Efectivo' ? 'Procesando...' : 'Efectivo'"></span>
                                     </button>
-                                    <button @click="procesarPago('MercadoPago')" :disabled="loadingPago"
+                                    <button @click="procesarPago('Tarjeta')" :disabled="loadingPago"
                                         class="flex-1 min-w-[150px] bg-white border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-100 flex flex-col items-center justify-center transition transform hover:scale-105 active:scale-95"
                                         :class="{ 'opacity-50 cursor-not-allowed': loadingPago }">
                                         <i class="fas fa-credit-card text-2xl mb-2"></i>
-                                        <span x-text="loadingPago && metodoPago === 'MercadoPago' ? 'Procesando...' : 'MercadoPago'"></span>
+                                        <span x-text="loadingPago && metodoPago === 'Tarjeta' ? 'Procesando...' : 'Tarjeta'"></span>
                                     </button>
                                     <button @click="showModal = false"
                                         class="flex-1 min-w-[150px] bg-white border-2 border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-100 flex flex-col items-center justify-center transition transform hover:scale-105 active:scale-95">
@@ -299,7 +299,7 @@
                                         <p class="text-lg font-semibold mb-2">Comprobante del Pedido</p>
                                         <p class="text-gray-600 mb-1" x-text="'Código: ' + resultadoPago.codigo"></p>
                                         <p class="text-gray-600 mb-3" x-text="'Fecha: ' + new Date().toLocaleString()"></p>
-
+                                        <p class="text-gray-600 mb-3" x-text="'Metodo: ' + resultadoPago.metodo"></p>
                                         <svg id="barcode" class="w-full h-16 mb-3"></svg>
 
                                         <p class="text-sm text-gray-500">Gracias por tu compra</p>
@@ -368,7 +368,8 @@
                 resultadoPago: {
                     titulo: '',
                     mensaje: '',
-                    codigo: null
+                    codigo: null,
+                    metodo: '' 
                 },
                 loadingPago: false,
                 metodoPago: null,
@@ -541,7 +542,8 @@
                             this.resultadoPago = {
                                 titulo: '¡Pago Exitoso!',
                                 mensaje: 'Tu pedido ha sido procesado con éxito.',
-                                codigo: data.codigo
+                                codigo: data.codigo,
+                                metodo: metodoPago
                             };
                             this.showResultadoModal = true;
                             this.generarCodigoBarras(data.codigo);
@@ -549,7 +551,8 @@
                             this.resultadoPago = {
                                 titulo: 'Error en el Pago',
                                 mensaje: data.message || 'Hubo un problema al procesar tu pago. Por favor, intenta de nuevo.',
-                                codigo: null
+                                codigo: null,
+                                metodo: '' 
                             };
                             this.showResultadoModal = true;
                         }
@@ -558,7 +561,8 @@
                         this.resultadoPago = {
                             titulo: 'Error en el Pago',
                             mensaje: 'Ocurrió un error al procesar el pago. Por favor, intenta de nuevo.',
-                            codigo: null
+                            codigo: null,
+                            metodo: '' 
                         };
                         this.showResultadoModal = true;
                         console.error('Error al procesar el pago:', error);

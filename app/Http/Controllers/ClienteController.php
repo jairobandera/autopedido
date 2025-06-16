@@ -182,7 +182,7 @@ class ClienteController extends Controller
         }
 
         $metodoPago = $request->input('metodo_pago');
-        if (!in_array($metodoPago, ['Efectivo', 'MercadoPago'])) {
+        if (!in_array($metodoPago, ['Efectivo', 'Tarjeta'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Método de pago inválido.',

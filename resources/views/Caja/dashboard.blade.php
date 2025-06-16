@@ -221,40 +221,51 @@
 
             // Poll cada 8s
             
-            // Ver Pedido (igual que antes)...
+            // DETALLES DEL PEDIDO
+           // 1) Instanciamos el modal una sola vez
+            const modalEl = document.getElementById('modalVerPedido');
+            const pedidoModal = new bootstrap.Modal(modalEl);
+
+            // 2) Al ocultarse por cualquier medio, limpiamos backdrop y clase en <body>
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                document.body.classList.remove('modal-open');
+                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            });
+
+            // 3) Tu listener de “Ver pedido” igual que antes, pero usando la instancia:
             document.querySelectorAll('.btn-ver').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const id = btn.dataset.id;
-                    fetch(`${baseShowUrl}/${id}`, {
-                        credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
-                    })
-                    .then(res => res.ok ? res.json() : Promise.reject(res.status))
-                    .then(p => {
-                        document.getElementById('modal-codigo').textContent = p.codigo;
-                        //document.getElementById('modal-total').textContent = p.total.toFixed(2);
-                        document.getElementById('modal-total').textContent = parseFloat(p.total).toFixed(2);
-                        const tbody = document.getElementById('modal-detalles');
-                        tbody.innerHTML = '';
-                        p.detalles.forEach(d => {
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td>${d.producto.nombre}</td>
-                                <td>${d.cantidad}</td>
-                                <td>$${parseFloat(d.subtotal).toFixed(2)}</td>`;
-                            tbody.appendChild(tr);
-                        });
-                        document.getElementById('btn-editar-pedido').onclick = () => {
-                            window.location.href = `${baseShowUrl}/${id}/edit`;
-                        };
-                        new bootstrap.Modal(document.getElementById('modalVerPedido')).show();
-                        // asignar el onclick al botón de imprimir
-                        document.getElementById('btn-imprimir-modal').onclick = () => {
-                            // abrimos el comprobante en una nueva pestaña
-                            window.open(`/caja/pedidos/${id}/comprobante`, '_blank');
-                        };
-                    })
-                    .catch(() => Swal.fire('Error', 'No pude cargar los detalles', 'error'));
+                const id = btn.dataset.id;
+                fetch(`${baseShowUrl}/${id}`, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(res => res.ok ? res.json() : Promise.reject(res.status))
+                .then(p => {
+                    document.getElementById('modal-codigo').textContent = p.codigo;
+                    document.getElementById('modal-total').textContent = parseFloat(p.total).toFixed(2);
+                    const tbody = document.getElementById('modal-detalles');
+                    tbody.innerHTML = '';
+                    p.detalles.forEach(d => {
+                    const tr = document.createElement('tr');
+                    
+                    tr.innerHTML = `
+                        <td>${d.producto.nombre}</td>
+                        <td>${d.cantidad}</td>
+                        <td>$${parseFloat(d.subtotal).toFixed(2)}</td>`;
+                    tbody.appendChild(tr);
+                    });
+                    document.getElementById('btn-editar-pedido').onclick = () => {
+                    window.location.href = `${baseShowUrl}/${id}/edit`;
+                    };
+                    document.getElementById('btn-imprimir-modal').onclick = () => {
+                    window.open(`/caja/pedidos/${id}/comprobante`, '_blank');
+                    };
+
+                    // 4) Mostramos con la instancia, en lugar de crear una nueva
+                    pedidoModal.show();
+                })
+                .catch(() => Swal.fire('Error', 'No pude cargar los detalles', 'error'));
                 });
             });
 
@@ -311,113 +322,140 @@
 
             // Select genérico de estado (igual que antes)...
             document.querySelectorAll('.estado-cambio').forEach(sel => {
-                sel.addEventListener('change', () => {
-                    const nuevoEstado = sel.value;
-                    const id = sel.dataset.id;
-                    Swal.fire({
-                        title: `Confirmar "${nuevoEstado}"`,
-                        text: `¿Deseas marcar este pedido como "${nuevoEstado}"?`,
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonText: 'Sí',
-                        cancelButtonText: 'No'
-                    }).then(({ isConfirmed }) => {
-                        if (!isConfirmed) {
-                            const original = sel.getAttribute('data-original');
-                            sel.value = original;
-                            return;
-                        }
-                        fetch(`${baseShowUrl}/${id}/estado`, {
-                            method: 'PATCH',
-                            credentials: 'same-origin',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
-                            body: JSON.stringify({ estado: nuevoEstado })
-                        })
-                        .then(res => res.ok ? res.json() : Promise.reject(res.status))
-                        .then(() => {
-                            const tr = sel.closest('tr');
-                            const tdBadge = tr.querySelector('.td-estado');
-                            let color;
-                            switch (nuevoEstado) {
-                                case 'Cancelado': color = 'bg-danger'; break;
-                                case 'Recibido': color = 'bg-secondary'; break;
-                                case 'En Preparacion': color = 'bg-warning'; break;
-                                case 'Listo': color = 'bg-info'; break;
-                                case 'Entregado': color = 'bg-success'; break;
-                            }
-                            tdBadge.innerHTML = `<span class="badge ${color}">${nuevoEstado}</span>`;
-                            // ❶ re-habilito o deshabilito el botón "Cocina"
-                            const cookBtn = tr.querySelector('.btn-cocina');
-                            if (cookBtn) {
-                            cookBtn.disabled = (nuevoEstado === 'En Preparacion');
-                            }
+                // Guardamos el valor original
+                sel.setAttribute('data-original', sel.value);
 
-                            if (nuevoEstado === 'Entregado') tr.remove();
-                            else sel.setAttribute('data-original', nuevoEstado);
-                            Swal.fire('Hecho', `Estado cambiado a "${nuevoEstado}"`, 'success');
-                        })
-                        .catch(() => {
-                            Swal.fire('Error', 'No se pudo actualizar el estado.', 'error');
-                            sel.value = sel.getAttribute('data-original');
-                        });
-                    });
-                });
-            });
+                sel.addEventListener('change', function onChange(e) {
+                // Impedimos que otros listeners capten este cambio
+                e.stopImmediatePropagation();
 
-        });
+                const nuevoEstado = this.value;
+                const original    = this.getAttribute('data-original');
+                const id          = this.dataset.id;
 
-        // Cambio de estado de pago
-        document.querySelectorAll('.pago-cambio').forEach(sel => {
-            // setear color inicial
-            const colorMap = {
-                Completado: 'bg-success',
-                Pendiente: 'bg-warning',
-                Fallido:   'bg-danger'
-            };
-            sel.classList.add(colorMap[sel.value] || '');
-
-            sel.addEventListener('change', () => {
-                const nuevo = sel.value;
-                const pagoId = sel.dataset.id;
                 Swal.fire({
-                    title: `Marcar pago como "${nuevo}"?`,
+                    title: `Confirmar "${nuevoEstado}"`,
+                    text: `¿Deseas marcar este pedido como "${nuevoEstado}"?`,
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Sí',
                     cancelButtonText: 'No'
                 }).then(({ isConfirmed }) => {
                     if (!isConfirmed) {
-                        // revertir al original (opción data-original)
-                        sel.value = sel.getAttribute('data-original');
-                        return;
+                    // Revertimos si el usuario cancela
+                    sel.value = original;
+                    return;
                     }
-                    fetch(`/caja/pagos/${pagoId}/estado`, {
-                        method: 'PATCH',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({ estado: nuevo })
+
+                    // Enviamos el patch
+                    fetch(`${baseShowUrl}/${id}/estado`, {
+                    method: 'PATCH',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ estado: nuevoEstado })
                     })
-                    .then(r => r.ok ? r.json() : Promise.reject())
+                    .then(res => res.ok ? res.json() : Promise.reject())
                     .then(() => {
-                        // actualizar color
-                        sel.classList.remove(...Object.values(colorMap));
-                        sel.classList.add(colorMap[nuevo]);
-                        sel.setAttribute('data-original', nuevo);
-                        Swal.fire('Hecho', 'Estado de pago actualizado', 'success');
+                    // Actualizamos badge y habilitación de botón Cocina
+                    const tr = sel.closest('tr');
+                    const tdBadge = tr.querySelector('.td-estado');
+                    const colorMap = {
+                        Cancelado:        'bg-danger',
+                        Recibido:         'bg-secondary',
+                        'En Preparacion': 'bg-warning',
+                        Listo:            'bg-info',
+                        Entregado:        'bg-success'
+                    };
+                    const color = colorMap[nuevoEstado] || 'bg-secondary';
+                    tdBadge.innerHTML = `<span class="badge ${color}">${nuevoEstado}</span>`;
+
+                    const cookBtn = tr.querySelector('.btn-cocina');
+                    if (cookBtn) cookBtn.disabled = (nuevoEstado === 'En Preparacion');
+
+                    if (nuevoEstado === 'Entregado') {
+                        tr.remove();
+                    } else {
+                        sel.setAttribute('data-original', nuevoEstado);
+                    }
+
+                    Swal.fire('Hecho', `Estado cambiado a "${nuevoEstado}"`, 'success');
                     })
                     .catch(() => {
-                        sel.value = sel.getAttribute('data-original');
-                        Swal.fire('Error', 'No se pudo actualizar', 'error');
+                    // Si falla, revertimos
+                    sel.value = original;
+                    Swal.fire('Error', 'No se pudo actualizar el estado.', 'error');
                     });
                 });
+                }, /* useCapture */ true);
             });
+        });
+
+        // Cambio de estado de pago
+        document.querySelectorAll('.pago-cambio').forEach(sel => {
+        const colorMap = {
+            Completado: 'bg-success',
+            Pendiente: 'bg-warning',
+            Fallido:   'bg-danger'
+        };
+
+        // Guardamos el valor original
+        sel.setAttribute('data-original', sel.value);
+        sel.classList.add(colorMap[sel.value] || '');
+
+        // *** listener en captura ***
+        sel.addEventListener('change', function onChange(e) {
+            // frenamos cualquier otro handler de 'change'
+            e.stopImmediatePropagation();
+
+            const original = this.getAttribute('data-original');
+            const nuevo    = this.value;
+            const pagoId   = this.dataset.id;
+
+            Swal.fire({
+            title: `Marcar pago como "${nuevo}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí',
+            cancelButtonText: 'No'
+            }).then(({ isConfirmed }) => {
+            if (!isConfirmed) {
+                // revertimos YA
+                sel.value = original;
+                return;
+            }
+
+            // entonces actualizamos
+            fetch(`/caja/pagos/${pagoId}/estado`, {
+                method: 'PATCH',
+                credentials: 'same-origin',
+                headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ estado: nuevo })
+            })
+            .then(r => {
+                if (!r.ok) throw new Error;
+                return r.json();
+            })
+            .then(() => {
+                // éxito: actualizamos color y data-original
+                sel.classList.remove(...Object.values(colorMap));
+                sel.classList.add(colorMap[nuevo] || '');
+                sel.setAttribute('data-original', nuevo);
+                Swal.fire('Hecho', 'Estado de pago actualizado', 'success');
+            })
+            .catch(() => {
+                // fallo: revertimos
+                sel.value = original;
+                Swal.fire('Error', 'No se pudo actualizar', 'error');
+            });
+            });
+        }, true /* <<< captura */);
         });
 
         {{-- Si vino un término de búsqueda y no hay pedidos, mostramos un error --}}
