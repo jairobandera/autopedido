@@ -10,17 +10,19 @@
                 <div class="col-md-4 mb-4" data-id="{{ $pedido->id }}">
                     <div class="card shadow-sm h-100">
                         <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                            <span>Pedido {{ $pedido->codigo }}</span>
+                            <span>Pedido: {{ $pedido->codigo }}</span>
                             <!-- Botón de cerrar -->
                             <button type="button" class="btn-close btn-close-white remove-card" aria-label="Quitar"></button>
                         </div>
                         <div class="card-body">
                             @if($pedido->cliente)
-                                <p><strong>Cliente:</strong> {{ $pedido->cliente->nombre }} {{ $pedido->cliente->apellido }}</p>
+                                <h4>Cliente: <strong>{{ $pedido->cliente->nombre }} {{ $pedido->cliente->apellido }}</strong></h4>
                                 @php $last4 = Str::substr($pedido->cliente->cedula, -4); @endphp
-                                <p><strong>Cédula:</strong> ****{{ $last4 }}</p>
+                                <h5>Cédula: <strong>****{{ $last4 }}</strong></h5>
+                                <h5>Pedido: {{ $pedido->codigo }}</h5>
                             @else
                                 <p class="text-muted">Cliente: —</p>
+                                <h4 class="text-center">{{ $pedido->codigo }}</h4>
                             @endif
                         </div>
                         <div class="card-footer text-end">

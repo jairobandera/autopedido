@@ -38,6 +38,12 @@ cp .env.example .env
 # Instalar dependencias
 composer install
 
+# Instalar Pusher
+composer require pusher/pusher-php-server "^7.0" o composer require pusher/pusher-php-server
+
+# Instalar Echo
+npm install -g laravel-echo-server
+
 # Conexion entre el Storage y Public
 php artisan storage:link
 

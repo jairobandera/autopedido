@@ -4,6 +4,24 @@ import Pusher from 'pusher-js';
 
 const STORAGE_KEY = 'removedPedidos';
 
+// —————————————————————————————————————————————
+// 0) Inyectar estilos para vibrar
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes vibrar {
+    0% { transform: translate(0, 0) rotate(0); }
+    25% { transform: translate(-2px, 2px) rotate(-1deg); }
+    50% { transform: translate(2px, -2px) rotate(1deg); }
+    75% { transform: translate(-2px, -2px) rotate(1deg); }
+    100% { transform: translate(2px, 2px) rotate(0); }
+  }
+  .vibrar {
+    animation: vibrar 0.1s infinite;
+  }
+`;
+document.head.appendChild(style);
+// —————————————————————————————————————————————
+
 // 1) Calcula ms que faltan para la próxima medianoche
 function msUntilEndOfDay() {
     const now = new Date();
@@ -71,11 +89,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (p.cliente) {
             const last4 = p.cliente.cedula.slice(-4);
             clienteHtml = `
-        <p><strong>Cliente:</strong> ${p.cliente.nombre} ${p.cliente.apellido}</p>
-        <p><strong>Cédula:</strong> ****${last4}</p>
+        <h4>Cliente: <strong>${p.cliente.nombre} ${p.cliente.apellido}</strong></h4>
+        <h5>Cédula: <strong>****${last4}</strong></h5>
+        <h5>Pedido: ${p.codigo}</h5>
       `;
         } else {
-            clienteHtml = `<p class="text-muted">Cliente: —</p>`;
+            clienteHtml = `<p class="text-muted">Cliente: —</p>
+            <h4 class="text-center">${p.codigo}</h4>`;
         }
 
         const hora = new Date(p.updated_at).toLocaleString('es-AR', {
@@ -104,6 +124,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         row.prepend(col);
+
+        // ———————— Efecto “Nuevo” ————————
+        const card = col.querySelector('.card');
+        // 1) badge
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-success position-absolute top-0 end-0 m-2';
+        badge.textContent = 'NUEVO';
+        card.style.position = 'relative';
+        card.appendChild(badge);
+        // 2) vibrar y limpiar a los 2s
+        card.classList.add('vibrar');
+        setTimeout(() => {
+            card.classList.remove('vibrar');
+            badge.remove();
+        }, 2000);
+        // ——————————————————————————————
     }
 
     // 5) Inicializa Pusher/Echo -----------------------------------
