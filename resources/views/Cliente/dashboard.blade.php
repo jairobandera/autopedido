@@ -45,7 +45,7 @@
                 </div>
             </div>
             <div class="text-center md:text-left">
-                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">Catálogo de Productos</h1>
+                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight cursor-pointer" @click="showLogoutModal = true">Catálogo de Productos</h1>
                 <p class="mt-3 text-lg md:text-xl opacity-90">Explora nuestro menú y personaliza tu pedido</p>
             </div>
         </header>
@@ -396,18 +396,44 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <footer class="bg-white mt-8 py-6 border-t border-gray-200">
-            <div class="container mx-auto flex justify-center">
-                <form action="{{ route('logout') }}" method="POST">
-                    @csrf
-                    <button type="submit" class="bg-red-600 text-white py-2 md:py-3 px-4 md:px-6 rounded-lg hover:bg-red-700 text-lg font-semibold transition transform hover:scale-105 active:scale-95">
-                        Cerrar Sesión
-                    </button>
-                </form>
+            <style>
+                .center-placeholder::placeholder {
+                    text-align: center;
+                }
+            </style>
+
+
+            <!-- Logout Modal -->
+            <div x-show="showLogoutModal" x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" @click.away="showLogoutModal = false">
+                <div class="bg-white rounded-2xl p-6 md:p-8 w-full max-w-md shadow-2xl">
+                    <h3 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 text-center">Ingrese la clave para cerrar sesión</h3>
+                    <div class="mb-4">
+                        <input type="password" x-model="logoutPassword" @keyup.enter="checkLogoutPassword"
+                            class="w-full border-gray-300 rounded-lg shadow-sm text-base md:text-lg p-2 focus:ring-orange-500 focus:border-orange-500 text-center center-placeholder"
+                            placeholder="Ingrese la clave">
+                    </div>
+                    <p x-show="logoutError" class="text-red-600 text-center mb-4" x-text="logoutError"></p>
+                    <div class="flex justify-center gap-4">
+                        <button @click="checkLogoutPassword"
+                                class="bg-orange-600 text-white py-2 md:py-3 px-4 rounded-lg hover:bg-orange-700 transition transform hover:scale-105">
+                            Confirmar
+                        </button>
+                        <button @click="showLogoutModal = false; logoutPassword = ''; logoutError = ''"
+                                class="bg-gray-200 text-gray-800 py-2 md:py-3 px-4 rounded-lg hover:bg-gray-300 transition transform hover:scale-105">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
             </div>
-        </footer>
+
+        </div>
     </div>
 
     <script>
@@ -424,6 +450,7 @@
                 updateCart: '{{ route("Cliente.updateCart") }}',
                 removeFromCart: '{{ route("Cliente.removeFromCart") }}',
                 procesarPago: '{{ route("Cliente.procesarPago") }}',
+                logout: '{{ route("logout") }}'
             }
         };
     </script>
@@ -441,6 +468,9 @@
                 showEmptyCartModal: false,
                 showResultadoModal: false,
                 showCart: false,
+                showLogoutModal: false,
+                logoutPassword: '',
+                logoutError: '',
                 resultadoPago: {
                     titulo: '',
                     mensaje: '',
@@ -460,6 +490,24 @@
                         const productoId = Number(producto.id);
                         this.ingredientesQuitados[productoId] = [];
                     });
+                },
+
+                checkLogoutPassword() {
+                    if (this.logoutPassword === '4500') {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = window._appData.rutas.logout;
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = window._appData.csrf;
+                        form.appendChild(csrfInput);
+                        document.body.appendChild(form);
+                        form.submit();
+                    } else {
+                        this.logoutError = 'Clave incorrecta';
+                        this.logoutPassword = '';
+                    }
                 },
 
                 async loadProducts(categoriaId = null, page = 1) {
