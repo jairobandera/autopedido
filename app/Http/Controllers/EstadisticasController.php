@@ -15,6 +15,10 @@ class EstadisticasController extends Controller
 {
     private function getStatisticsData($startDate, $endDate)
     {
+        // Asegurar que endDate incluya todo el día
+        $startDate = Carbon::parse($startDate)->startOfDay();
+        $endDate = Carbon::parse($endDate)->endOfDay();
+
         // Ventas diarias
         $ventasDiarias = Pago::selectRaw('DATE(fecha) as fecha, SUM(monto) as total')
             ->whereBetween('fecha', [$startDate, $endDate])
@@ -28,6 +32,14 @@ class EstadisticasController extends Controller
                     'total' => (float) $item->total,
                 ];
             });
+
+        // Si es un solo día, aseguramos que haya al menos un registro
+        if ($startDate->isSameDay($endDate) && $ventasDiarias->isEmpty()) {
+            $ventasDiarias->push([
+                'fecha' => $startDate->format('Y-m-d'),
+                'total' => 0.0,
+            ]);
+        }
 
         // Productos más vendidos (top 5)
         $masVendidos = DetallePedido::selectRaw('producto_id, SUM(cantidad) as total_vendido')
@@ -92,6 +104,20 @@ class EstadisticasController extends Controller
                 ];
             });
 
+        // Si es un solo día, rellenar las horas vacías con 0
+        if ($startDate->isSameDay($endDate)) {
+            $allHours = collect(range(0, 23))->map(function ($hour) {
+                return sprintf('%02d:00-%02d:00', $hour, $hour + 1);
+            });
+            $ingresosPorHora = $allHours->map(function ($hour) use ($ingresosPorHora) {
+                $existing = $ingresosPorHora->firstWhere('hora', $hour);
+                return [
+                    'hora' => $hour,
+                    'total' => $existing ? (float) $existing['total'] : 0.0,
+                ];
+            });
+        }
+
         return compact(
             'ventasDiarias',
             'masVendidos',
@@ -103,9 +129,9 @@ class EstadisticasController extends Controller
 
     public function index(Request $request)
     {
-        // Rango de fechas: inicio y fin del mes actual por defecto
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
+        // Rango de fechas: día actual por defecto si no se proporciona
+        $startDate = $request->input('start_date', Carbon::today()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::today()->format('Y-m-d'));
 
         // Obtener datos de estadísticas
         $data = $this->getStatisticsData($startDate, $endDate);
@@ -208,9 +234,9 @@ class EstadisticasController extends Controller
 
     public function exportPdf(Request $request)
     {
-        // Rango de fechas: inicio y fin del mes actual por defecto
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
+        // Rango de fechas: día actual por defecto si no se proporciona
+        $startDate = $request->input('start_date', Carbon::today()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::today()->format('Y-m-d'));
 
         // Obtener datos de estadísticas
         $data = $this->getStatisticsData($startDate, $endDate);

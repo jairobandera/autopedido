@@ -12,7 +12,7 @@
 
         <!-- Formulario de filtro por fechas -->
         <div class="mb-4">
-            <form action="{{ route('estadisticas.index') }}" method="GET" class="row g-3 justify-content-center align-items-end">
+            <form action="{{ route('estadisticas.index') }}" method="GET" class="row g-3 justify-content-center align-items-end" onsubmit="return validateDates()">
                 <div class="col-md-4">
                     <label for="start_date" class="form-label fw-bold">Fecha Inicial <span class="text-danger">*</span></label>
                     <input type="date" name="start_date" id="start_date" class="form-control" value="{{ $startDate }}" required>
@@ -32,9 +32,15 @@
                         <i class="bi bi-file-pdf me-1"></i> Exportar
                     </a>
                 </div>
-
             </form>
         </div>
+
+        <!-- Mensaje si no hay datos -->
+        @if (empty($ventasDiariasChart['data']['labels']) && empty($masVendidosChart['data']['labels']) && empty($ventasPorCategoriaChart['data']['labels']) && empty($pedidosPorEstadoChart['data']['labels']) && empty($ingresosPorHoraChart['data']['labels']))
+            <div class="alert alert-info text-center">
+                No hay datos disponibles para el rango de fechas seleccionado.
+            </div>
+        @endif
 
         <!-- Gráficos -->
         <div class="row g-4">
@@ -94,6 +100,16 @@
 
 @push('scripts')
 <script>
+    function validateDates() {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            alert('La fecha inicial no puede ser mayor que la fecha final.');
+            return false;
+        }
+        return true;
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Verificar y renderizar cada gráfico
         const charts = [{
