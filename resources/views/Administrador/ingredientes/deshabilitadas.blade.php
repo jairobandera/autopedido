@@ -3,49 +3,54 @@
 @section('title', 'Ingredientes Deshabilitados')
 
 @section('content')
-    <div class="text-center mb-4">
-        <h2>Ingredientes Deshabilitados</h2>
-    </div>
+    <div class="container">
+        <div class="text-center mb-5 animate__animated animate__fadeIn">
+            <h2 class="fw-bold">Ingredientes Deshabilitados</h2>
+            <p class="text-muted">Revisa y habilita ingredientes previamente deshabilitados.</p>
+        </div>
 
-    <a href="{{ route('ingredientes.index') }}" class="btn btn-primary mb-3">← Volver al listado</a>
+        <a href="{{ route('ingredientes.index') }}" class="btn btn-outline-primary mb-4 rounded-pill">
+            <i class="bi bi-arrow-left me-1"></i> Volver al listado
+        </a>
 
-    <div class="table-responsive">
-        <table class="table table-hover text-center align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Descripción</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($ingredientes as $ingrediente)
+        <div class="table-responsive">
+            <table class="table table-hover align-middle text-center rounded-3 overflow-hidden shadow-sm">
+                <thead class="table-dark">
                     <tr>
-                        <td>{{ $ingrediente->id }}</td>
-                        <td>{{ $ingrediente->nombre }}</td>
-                        <td>{{ $ingrediente->descripcion }}</td>
-                        <td>
-                            <form id="form-habilitar-{{ $ingrediente->id }}"
-                                  action="{{ route('ingredientes.habilitar', $ingrediente->id) }}" method="POST">
-                                @csrf
-                                @method('PATCH')
-                                <button type="button" class="btn btn-success btn-sm"
-                                        onclick="confirmarHabilitar({{ $ingrediente->id }}, '{{ $ingrediente->nombre }}')">
-                                    Habilitar
-                                </button>
-                            </form>
-                        </td>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Acción</th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="4">No hay ingredientes deshabilitados.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-        <div class="d-flex justify-content-center mt-3">
-            {{ $ingredientes->links() }}
+                </thead>
+                <tbody>
+                    @forelse($ingredientes as $ingrediente)
+                        <tr class="align-middle">
+                            <td>{{ $ingrediente->id }}</td>
+                            <td>{{ $ingrediente->nombre }}</td>
+                            <td>{{ $ingrediente->descripcion }}</td>
+                            <td>
+                                <form id="form-habilitar-{{ $ingrediente->id }}"
+                                      action="{{ route('ingredientes.habilitar', $ingrediente->id) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="button" class="btn btn-success btn-sm rounded-pill"
+                                            onclick="confirmarHabilitar({{ $ingrediente->id }}, '{{ $ingrediente->nombre }}')">
+                                        <i class="bi bi-check-circle me-1"></i> Habilitar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="text-muted">No hay ingredientes deshabilitados.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+            <div class="d-flex justify-content-center mt-4">
+                {{ $ingredientes->links('pagination::bootstrap-5') }}
+            </div>
         </div>
     </div>
 @endsection
@@ -59,6 +64,8 @@
                     title: '¡Ingrediente habilitado!',
                     text: 'El ingrediente "{{ session('ingrediente_habilitado') }}" fue habilitado correctamente.',
                     confirmButtonColor: '#198754',
+                    timer: 3000,
+                    timerProgressBar: true,
                 });
             });
         </script>
@@ -72,6 +79,8 @@
                     title: 'Ya existe un ingrediente activo',
                     text: 'No se puede habilitar "{{ session('error_habilitar') }}" porque ya existe activo.',
                     confirmButtonColor: '#dc3545',
+                    timer: 3000,
+                    timerProgressBar: true,
                 });
             });
         </script>

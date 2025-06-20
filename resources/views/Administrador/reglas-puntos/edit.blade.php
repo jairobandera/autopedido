@@ -1,81 +1,100 @@
-{{-- resources/views/Administrador/reglas-puntos/edit.blade.php --}}
 @extends('layouts.app-administrador')
 
 @section('title', 'Editar Tramo de Puntos #' . $reglaPunto->id)
 
 @section('content')
-    <div class="text-center mb-4">
-        <h2>Editar Tramo de Puntos</h2>
-    </div>
-
-    {{-- Errores de validación --}}
-    @if($errors->any())
-        <div class="alert alert-danger">
-            <strong>Ups!</strong> Corrige los siguientes errores:<br><br>
-            <ul class="mb-0">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
+    <div class="container">
+        <div class="text-center mb-5 animate__animated animate__fadeIn">
+            <h2 class="fw-bold">Editar Tramo de Puntos</h2>
+            <p class="text-muted">Modifica los valores del tramo de puntos seleccionado.</p>
         </div>
-    @endif
 
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <form action="{{ route('reglas-puntos.update', $reglaPunto->id) }}" method="POST" id="form-editar-regla">
-                @csrf
-                @method('PUT')
+        @if($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>¡Ups!</strong> Corrige los siguientes errores:<br><br>
+                <ul class="mb-0">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+        @endif
 
-                <div class="mb-3">
-                    <label for="monto_min" class="form-label">Monto Mínimo</label>
-                    <input type="number" step="0.01" min="0" name="monto_min" id="monto_min"
-                        class="form-control @error('monto_min') is-invalid @enderror"
-                        value="{{ old('monto_min', $reglaPunto->monto_min) }}" required>
-                    @error('monto_min')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form action="{{ route('reglas-puntos.update', $reglaPunto->id) }}" method="POST" id="form-editar-regla">
+                    @csrf
+                    @method('PUT')
 
-                <div class="mb-3">
-                    <label for="monto_max" class="form-label">Monto Máximo</label>
-                    <input type="number" step="0.01" min="0" name="monto_max" id="monto_max"
-                        class="form-control @error('monto_max') is-invalid @enderror"
-                        value="{{ old('monto_max', $reglaPunto->monto_max) }}" required>
-                    @error('monto_max')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+                    <div class="mb-3">
+                        <label for="monto_min" class="form-label fw-bold">Monto Mínimo <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0" name="monto_min" id="monto_min"
+                               class="form-control @error('monto_min') is-invalid @enderror"
+                               value="{{ old('monto_min', $reglaPunto->monto_min) }}" required>
+                        @error('monto_min')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
 
-                <div class="mb-3">
-                    <label for="puntos_base" class="form-label">Puntos por Pedido en este Rango</label>
-                    <input type="number" step="1" min="1" name="puntos_base" id="puntos_base"
-                        class="form-control @error('puntos_base') is-invalid @enderror"
-                        value="{{ old('puntos_base', $reglaPunto->puntos_base) }}" required>
-                    @error('puntos_base')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+                    <div class="mb-3">
+                        <label for="monto_max" class="form-label fw-bold">Monto Máximo <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0" name="monto_max" id="monto_max"
+                               class="form-control @error('monto_max') is-invalid @enderror"
+                               value="{{ old('monto_max', $reglaPunto->monto_max) }}" required>
+                        @error('monto_max')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
 
-                {{-- Nota explicativa sobre los tramos --}}
-                <div class="alert alert-secondary small">
-                    Ajusta los valores de este tramo. Si el total del pedido está entre
-                    <strong>Monto Mínimo</strong> y <strong>Monto Máximo</strong>, se otorgarán
-                    <strong>Puntos por Pedido</strong>.
-                </div>
+                    <div class="mb-3">
+                        <label for="puntos_base" class="form-label fw-bold">Puntos por Pedido en este Rango <span class="text-danger">*</span></label>
+                        <input type="number" step="1" min="1" name="puntos_base" id="puntos_base"
+                               class="form-control @error('puntos_base') is-invalid @enderror"
+                               value="{{ old('puntos_base', $reglaPunto->puntos_base) }}" required>
+                        @error('puntos_base')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
 
-                {{-- Vista previa dinámica --}}
-                <div id="preview-regla" class="alert alert-info d-none"></div>
+                    <div class="alert alert-secondary small">
+                        Ajusta los valores de este tramo. Si el total del pedido está entre
+                        <strong>Monto Mínimo</strong> y <strong>Monto Máximo</strong>, se otorgarán
+                        <strong>Puntos por Pedido</strong>.
+                    </div>
 
-                <div class="d-flex justify-content-between">
-                    <a href="{{ route('reglas-puntos.index') }}" class="btn btn-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-primary">Actualizar Tramo</button>
-                </div>
-            </form>
+                    <div id="preview-regla" class="alert alert-info d-none"></div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ route('reglas-puntos.index') }}" class="btn btn-outline-secondary rounded-pill">
+                            <i class="bi bi-arrow-left me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary rounded-pill">
+                            <i class="bi bi-save me-1"></i> Actualizar Tramo
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 @endsection
 
 @section('scripts')
+    @if(session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: '{{ session('success') }}',
+                    confirmButtonColor: '#198754',
+                    timer: 3000,
+                    timerProgressBar: true,
+                });
+            });
+        </script>
+    @endif
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const minField = document.getElementById('monto_min');

@@ -9,6 +9,7 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\IngredienteController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\PromocionController;
+use App\Http\Controllers\EstadisticasController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
@@ -96,6 +97,10 @@ Route::middleware('auth')->group(function () {
             ->names('reglas-puntos');
         // Resource de PROMOCIONES
         Route::resource('/administrador/promociones', PromocionController::class);
+
+        // 🔹 Resource de GRAFICOS
+        Route::get('/administrador/estadisticas', [EstadisticasController::class, 'index'])->name('estadisticas.index');
+        Route::get('/estadisticas/export-pdf', [EstadisticasController::class, 'exportPdf'])->name('estadisticas.export-pdf');
     });
 
     // 🔹 Rutas protegidas para cajeros (verificar rol)
