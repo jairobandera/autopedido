@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.Echo
         .channel('pedidos')
         .listen('PedidoEstadoActualizado', async e => {
-            if (e.estado !== 'Entregado') return;
+            if (e.estado !== 'Listo') return;
             try {
                 const res = await fetch(`${window.baseShowUrl}${e.id}`, {
                     headers: { 'Accept': 'application/json' }

@@ -384,7 +384,7 @@ class ClienteController extends Controller
         $hoy = Carbon::now('America/Montevideo')->toDateString();
 
         $pedidos = Pedido::with('cliente')
-            ->where('estado', 'Entregado')
+            ->where('estado', 'Listo')
             ->whereDate('updated_at', $hoy)        // ← sólo hoy
             ->orderBy('updated_at', 'desc')
             ->get();                               // ya no necesitas take(5)
@@ -397,7 +397,7 @@ class ClienteController extends Controller
     public function showPublic(Pedido $pedido)
     {
         // Solo si ya está Entregado (opcional):
-        if ($pedido->estado !== 'Entregado') {
+        if ($pedido->estado !== 'Listo') {
             abort(404);
         }
 
