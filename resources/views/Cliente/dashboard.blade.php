@@ -750,7 +750,7 @@
                 },
 
                 imprimirTicket() {
-                    const contenido = document.querySelector('.border-2.border-dashed.border-gray-300.p-4.rounded-lg.mb-4')?.outerHTML || '';
+                    const contenido = document.querySelector('#ticket-content .border-2').outerHTML; // ya es más seguro
                     const ventana = window.open('', '_blank');
                     ventana.document.open();
                     ventana.document.write(`
@@ -759,17 +759,64 @@
                         <head>
                             <title>Ticket de Pedido</title>
                             <style>
-                                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-                                .ticket { width: 80mm; margin: 0 auto; text-align: center; }
-                                .info { margin: 10px 0; }
-                                .barcode { margin: 10px 0; }
-                                .footer { font-size: 12px; margin-top: 10px; }
-                                p { margin: 0; padding: 2px 0; }
-                                @media print { body { width: 80mm; } }
+                                body { 
+                                    font-family: 'Poppins', sans-serif; 
+                                    margin: 0; 
+                                    padding: 10px; 
+                                    width: 76mm;
+                                }
+                                .ticket { 
+                                    width: 76mm; 
+                                    max-width: 76mm;
+                                    margin: 0 auto; 
+                                    text-align: center; 
+                                }
+                                .info { 
+                                    margin: 10px 0; 
+                                }
+                                .barcode { 
+                                    margin: 10px 0; 
+                                }
+                                .footer { 
+                                    font-size: 12px; 
+                                    margin-top: 10px; 
+                                }
+                                p { 
+                                    margin: 0; 
+                                    padding: 5px 0; 
+                                }
+                                h3 { 
+                                    margin: 0; 
+                                    padding: 5px 0; 
+                                }
+                                hr {
+                                    border: none;
+                                    border-top: 1px dashed #000;
+                                    margin: 10px 0;
+                                }
+                                img {
+                                    max-width: 60mm;
+                                    margin: 0 auto 10px;
+                                }
+                                @media print {
+                                    body { 
+                                        width: 76mm; 
+                                        margin: 0;
+                                    }
+                                    @page {
+                                        size: 76mm auto;
+                                        margin: 0;
+                                    }
+                                    #btn-imprimir-comprobante {
+                                        display: none !important;
+                                    }
+                                }
                             </style>
                         </head>
                         <body onload="window.print();">
-                            <div class="ticket">${contenido}</div>
+                            <div class="ticket">
+                                ${contenido}
+                            </div>
                         </body>
                         </html>
                     `);
