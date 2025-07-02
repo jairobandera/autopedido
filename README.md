@@ -60,6 +60,8 @@ php artisan migrate --seed
 
 # Levantar el servidor local
 php artisan serve
+y
+npm run dev
 
 📦 Base de datos
 La base de datos se llena automáticamente con:
